@@ -77,8 +77,7 @@ const updateUser = asyncHandler(async (req, res) => {
         first_name: req.body.first_name,
         last_name: req.body.last_name,
         email: req.body.email,
-        role: req.body.role,
-        isDelete: req.body.isDelete,
+       
       },
       {
         new: true,
