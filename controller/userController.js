@@ -1,9 +1,13 @@
 const { generateToken } = require("../config/jwtToken");
 const User = require("../models/userModel");
+const QuickCar = require("../models/quickCarModel")
 const asyncHandler = require("express-async-handler");
 const { validateMongoDbId } = require("../utilis/validateMongoDb");
 const { generateRefreshToken } = require("../config/refreshToken");
-const { isUserDelete } = require("../middleawares/authMiddleWare")
+const { isUserDelete } = require("../middleawares/authMiddleWare");
+const Joi = require('joi');
+const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
 
 
 // create user controler
@@ -20,6 +24,111 @@ const createUser = asyncHandler(async (req, res) => {
     throw new Error("User Already Exists");
   };
 });
+
+// create a driver user. 
+
+const schema = Joi.object({
+  first_name: Joi.string().required(),
+  last_name: Joi.string().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+  vehicleType: Joi.string().valid('Coche', 'Moto').required(),
+  vehicleModel: Joi.string().required(),
+  startLocation: Joi.string().required(),
+  endLocation: Joi.string().required(),
+  startTime: Joi.object({
+      hour: Joi.number().integer().min(0).max(23).required(),
+      minute: Joi.number().integer().min(0).max(59).required()
+  }).required(),
+  endTime: Joi.object({
+      hour: Joi.number().integer().min(0).max(23).required(),
+      minute: Joi.number().integer().min(0).max(59).required()
+  }).required(),
+  regularDays: Joi.array().items(Joi.string().valid('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo')).required(),
+  availableSeats: Joi.number().integer().min(1).required(),
+  pricePerSeat: Joi.number().required(),
+  image: Joi.string().uri().optional(),
+  drivingLicense: Joi.string().optional(),
+  fare: Joi.number().required()
+});
+
+const createDriverUser = async (req, res) => {
+  const {
+      first_name,
+      last_name,
+      email,
+      password,
+      vehicleType,
+      vehicleModel,
+      startLocation,
+      endLocation,
+      startTime,
+      endTime,
+      regularDays,
+      availableSeats,
+      pricePerSeat,
+      image,
+      drivingLicense,
+      fare
+  } = req.body;
+
+  // Validar los datos de entrada
+  const { error } = schema.validate(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+      // Buscar usuario por email
+      let user = await User.findOne({ email }).session(session);
+
+      if (!user) {
+          // Si el usuario no existe, crearlo
+          user = new User({
+              first_name,
+              last_name,
+              email,
+              password,
+              role: 'user'
+          });
+
+          user = await user.save({ session });
+      } else {
+        throw new Error("User Already Exists");
+      }
+
+      // Crear documento en quickCar usando el _id del usuario
+      const quickCarRide = new QuickCar({
+          user: user._id,
+          vehicleType,
+          vehicleModel,
+          startLocation,
+          endLocation,
+          startTime,
+          endTime,
+          regularDays,
+          availableSeats,
+          pricePerSeat,
+          image,
+          drivingLicense,
+          fare
+      });
+
+      const savedRide = await quickCarRide.save({ session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(201).json({ user, ride: savedRide });
+
+  } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      console.error('Error creando usuario y viaje:', error);
+      res.status(500).json({ message: 'Error creando usuario y viaje', error: error.message });
+  }
+};
 
 // create Loggin controler
 
@@ -239,6 +348,7 @@ module.exports = {
   unBlockUser,
   handleRefreshToken,
   findDeletedAccounts,
-  getAllDeleteAccount
+  getAllDeleteAccount, 
+  createDriverUser
 
 };

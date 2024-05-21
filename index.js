@@ -14,7 +14,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended:false }));
 app.use(cookieParser());
 
-app.use('/api/ObbaraMarket/user', authRouter)
+app.use('/api/ObbaraMarket', authRouter)
 
 app.use(notFound);
 app.use(errorHandler);
