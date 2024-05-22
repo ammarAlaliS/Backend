@@ -10,28 +10,22 @@ const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 
 
-// create user controler
-
 const createUser = asyncHandler(async (req, res) => {
-  const email = req.body.email;
-  const findUser = await User.findOne({ email: email });
-  if (!findUser) {
-    // CREATE A NEW USER
-    const newUser = await User.create(req.body);
-    res.json(newUser);
-  } else {
-    // USER ALREADY EXISTS
-    throw new Error("User Already Exists");
-  };
-});
+  const { email } = req.body;
+  
+  // Verificar si ya existe un usuario con el mismo correo electrónico
+  const existingUser = await User.findOne({ 'global_user.email': email });
+  if (existingUser) {
+    return res.status(400).json({ message: "User Already Exists" });
+  }
 
+  // Si no existe un usuario con el mismo correo electrónico, crear uno nuevo
+  const newUser = await User.create(req.body);
+  res.json(newUser);
+});
 // create a driver user. 
 
 const schema = Joi.object({
-  first_name: Joi.string().required(),
-  last_name: Joi.string().required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
   vehicleType: Joi.string().valid('Coche', 'Moto').required(),
   vehicleModel: Joi.string().required(),
   startLocation: Joi.string().required(),
@@ -52,120 +46,104 @@ const schema = Joi.object({
   fare: Joi.number().required()
 });
 
-const createDriverUser = async (req, res) => {
+const createDriverUser = asyncHandler(async (req, res) => {
   const {
-      first_name,
-      last_name,
-      email,
-      password,
-      vehicleType,
-      vehicleModel,
-      startLocation,
-      endLocation,
-      startTime,
-      endTime,
-      regularDays,
-      availableSeats,
-      pricePerSeat,
-      image,
-      drivingLicense,
-      fare
+    vehicleType,
+    vehicleModel,
+    startLocation,
+    endLocation,
+    startTime,
+    endTime,
+    regularDays,
+    availableSeats,
+    pricePerSeat,
+    image,
+    drivingLicense,
+    fare,
   } = req.body;
 
   // Validar los datos de entrada
   const { error } = schema.validate(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
+  const user = req.user;
+
+  // Verificar si el usuario ya tiene un QuickCarDriver
+  if (user.global_user.QuickCar) {
+    return res.status(400).json({ message: "El usuario ya está registrado como conductor" });
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-      // Buscar usuario por email
-      let user = await User.findOne({ email }).session(session);
-
-      if (!user) {
-          // Si el usuario no existe, crearlo
-          user = new User({
-              first_name,
-              last_name,
-              email,
-              password,
-              role: 'user'
-          });
-
-          user = await user.save({ session });
-      } else {
-        throw new Error("User Already Exists");
+    const quickCarDriver = new QuickCar({
+      driver_information: {
+        vehicleType,
+        vehicleModel,
+        startLocation,
+        endLocation,
+        startTime,
+        endTime,
+        regularDays,
+        availableSeats,
+        pricePerSeat,
+        image,
+        drivingLicense,
+        fare,
       }
+    });
 
-      // Crear documento en quickCar usando el _id del usuario
-      const quickCarRide = new QuickCar({
-          user: user._id,
-          vehicleType,
-          vehicleModel,
-          startLocation,
-          endLocation,
-          startTime,
-          endTime,
-          regularDays,
-          availableSeats,
-          pricePerSeat,
-          image,
-          drivingLicense,
-          fare
-      });
+    const userDriver = await quickCarDriver.save({ session });
 
-      const savedRide = await quickCarRide.save({ session });
+    user.global_user.QuickCar = userDriver._id;
+    await user.save({ session });
 
-      await session.commitTransaction();
-      session.endSession();
+    await session.commitTransaction();
+    session.endSession();
 
-      res.status(201).json({ user, ride: savedRide });
+    res.status(201).json({ user, driver_information: userDriver });
 
   } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-      console.error('Error creando usuario y viaje:', error);
-      res.status(500).json({ message: 'Error creando usuario y viaje', error: error.message });
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error creando conductor:", error);
+    res.status(500).json({ message: "Error creando conductor", error: error.message });
   }
-};
+});
 
-// create Loggin controler
 
+
+// create Loggin controller
 const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   // check if user exist or not
-  const findUser = await User.findOne({ email });
+  const findUser = await User.findOne({ 'global_user.email': email }).populate('global_user.QuickCar');
   if (findUser && (await findUser.isPasswordMatched(password))) {
-
-    // generate a new token 
-
-    const refreshToken = await generateRefreshToken(findUser?._id);
-    const updateUser = await User.findByIdAndUpdate(findUser.id, 
-      {
-        refreshToken: refreshToken,
-      },
-      {
-        new: true
-      })
-    res.cookie('refreshToken', refreshToken,
-    {
-      httpOnly:true,
+    // generate a new token
+    const refreshToken = await generateRefreshToken(findUser._id);
+    const updateUser = await User.findByIdAndUpdate(
+      findUser._id,
+      { 'global_user.refreshToken': refreshToken },
+      { new: true }
+    );
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
       maxAge: 72 * 60 * 60 * 1000,
-    })
+    });
     res.json({
-      _id: findUser?._id,
-      first_name: findUser?.first_name,
-      last_name: findUser?.last_name,
-      email: findUser?.email,
-      mobile: findUser?.mobile,
-      token: generateToken(findUser?._id),
-
+      _id: findUser._id,
+      first_name: findUser.global_user.first_name,
+      last_name: findUser.global_user.last_name,
+      email: findUser.global_user.email,
+      token: generateToken(findUser._id),
+      QuickCar: findUser.global_user.QuickCar || null, // Agrega el objeto QuickCar si existe, sino null
     });
   } else {
-    throw new Error("Invalid Credentials");
+    throw new Error('Invalid Credentials');
   }
 });
+
 
 // handle refresh token 
 const handleRefreshToken = asyncHandler(async(req, res) => {
@@ -205,9 +183,11 @@ const updateUser = asyncHandler(async (req, res) => {
 
 const getUsers = asyncHandler(async (req, res) => {
   try {
-    const users = await User.find();
+    // Usar populate para obtener el objeto completo de QuickCar
+    const users = await User.find().populate('global_user.QuickCar');
     res.json(users);
   } catch (error) {
+    // Lanzar el error para ser manejado por asyncHandler
     throw new Error(error);
   }
 });

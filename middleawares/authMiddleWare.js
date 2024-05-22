@@ -26,10 +26,8 @@ const authMiddleware = asyncHandler(async(req,res,next) =>{
 // verify is the user role is admin or user.
 
 const isAdmin = asyncHandler(async (req, res, next) => {
-    const userId = req.user;  
-    const adminUser = await User.findOne({ _id: userId }); 
-
-    if (!adminUser || adminUser.role !== "admin") {
+    const user = req.user; // Obtener el usuario directamente de req.user
+    if (!user || user.role !== "admin") { // Verificar el rol directamente en el usuario
         throw new Error("You are not an admin");
     } else {
         next();
@@ -39,9 +37,7 @@ const isAdmin = asyncHandler(async (req, res, next) => {
 // verify if the user is delete 
 
 const checkAccountStatus = asyncHandler(async (req, res, next) => {
-    const userId = req.user;
-    const user = await User.findById(userId);
-
+    const user = req.user; // Obtener el usuario directamente de req.user
     if (!user) {
         throw new Error("User not found");
     }
@@ -52,6 +48,7 @@ const checkAccountStatus = asyncHandler(async (req, res, next) => {
 
     next();
 });
+
 const AccountStatus = asyncHandler(async (req, res, next) => {
     try {
         const users = await User.find({ isDelete: true });
@@ -61,7 +58,5 @@ const AccountStatus = asyncHandler(async (req, res, next) => {
         next(error); 
     }
 });
-
-
 
 module.exports = { authMiddleware, isAdmin, checkAccountStatus, AccountStatus };

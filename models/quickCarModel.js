@@ -1,94 +1,97 @@
 const mongoose = require('mongoose');
 
 const quickCarSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-    },
-    vehicleType: {
-        type: String,
-        enum: ['Coche', 'Moto'],
-        required: [true, 'Vehicle type is required'],
-    },
-    vehicleModel: {
-        type: String,
-        required: [true, 'Vehicle model is required'],
-    },
-    startLocation: {
-        type: String,
-        required: [true, 'Start location is required'],
-    },
-    endLocation: {
-        type: String,
-        required: [true, 'End location is required'],
-    },
-    startTime: {
-        hour: { 
-            type: Number, 
-            required: [true, 'Start hour is required'],
-            min: 0,
-            max: 23
+    driver_information: {
+        vehicleType: {
+            type: String,
+            enum: ['Coche', 'Moto'],
+            required: [true, 'Vehicle type is required'],
         },
-        minute: { 
-            type: Number, 
-            required: [true, 'Start minute is required'],
-            min: 0,
-            max: 59
+        vehicleModel: {
+            type: String,
+            required: [true, 'Vehicle model is required'],
+            trim: true,
         },
-    },
-    endTime: {
-        hour: { 
-            type: Number, 
-            required: [true, 'End hour is required'],
-            min: 0,
-            max: 23
+        startLocation: {
+            type: String,
+            required: [true, 'Start location is required'],
+            trim: true,
         },
-        minute: { 
-            type: Number, 
-            required: [true, 'End minute is required'],
-            min: 0,
-            max: 59
+        endLocation: {
+            type: String,
+            required: [true, 'End location is required'],
+            trim: true,
         },
-    },
-    regularDays: {
-        type: [String],
-        enum: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
-        required: [true, 'Regular days are required'],
-    },
-    availableSeats: {
-        type: Number,
-        required: [true, 'Available seats are required'],
-        min: 1,
-    },
-    pricePerSeat: {
-        type: Number,
-        required: [true, 'Price per seat is required'],
-    },
-    image: {
-        type: String,
-        validate: {
-            validator: function(v) {
-                return v ? /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/.test(v) : true;
+        startTime: {
+            hour: {
+                type: Number,
+                min: 0,
+                max: 23,
+                required: [true, 'Start time hour is required'],
             },
-            message: 'Invalid URL'
+            minute: {
+                type: Number,
+                min: 0,
+                max: 59,
+                required: [true, 'Start time minute is required'],
+            },
+        },
+        endTime: {
+            hour: {
+                type: Number,
+                min: 0,
+                max: 23,
+                required: [true, 'End time hour is required'],
+            },
+            minute: {
+                type: Number,
+                min: 0,
+                max: 59,
+                required: [true, 'End time minute is required'],
+            },
+        },
+        regularDays: {
+            type: [String],
+            enum: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+            required: [true, 'Regular days are required'],
+        },
+        availableSeats: {
+            type: Number,
+            min: 1,
+            required: [true, 'Available seats is required and should be at least 1'],
+        },
+        pricePerSeat: {
+            type: Number,
+            required: [true, 'Price per seat is required'],
+        },
+        image: {
+            type: String,
+            trim: true,
+            validate: {
+                validator: (v) => {
+                    const regex = /^https?:\/\/.+\.(jpg|jpeg|png|gif)$/i;
+                    return regex.test(v);
+                },
+                message: (props) => `${props.value} is not a valid image URL`,
+            },
+        },
+        drivingLicense: {
+            type: String,
+            trim: true,
+        },
+        fare: {
+            type: Number,
+            required: [true, 'Fare is required'],
         },
     },
-    drivingLicense: {
-        type: String,
+    Trips: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TripMade',
+        required: false,
     },
-    fare: {
-        type: Number,
-        required: [true, 'Fare is required'],
-    },
-    date: {
-        type: Date,
-        default: Date.now,
-    },
+
 }, {
     timestamps: true,
 });
 
-const QuickCar = mongoose.model('QuickCar', quickCarSchema);
-
-module.exports = QuickCar;
+module.exports = mongoose.model('QuickCar', quickCarSchema);

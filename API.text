@@ -1,0 +1,13 @@
+Quisiera brindarle una actualización sobre la seguridad de la API que estoy desarrollando. Aunque siempre estoy en busca de mejorar, me complace informarle que hasta el momento he implementado varias medidas de seguridad significativas.
+
+En cuanto a la autenticación, he establecido un sistema basado en tokens. Esto se evidencia en el controlador loginUserCtrl, donde genero un token JWT después de autenticar exitosamente al usuario. Además, he implementado un mecanismo de control de sesión al almacenar un token de actualización en una cookie HTTPOnly.
+
+Para garantizar la integridad de los datos, utilizo un esquema de validación de Joi. Esto me permite asegurarme de que los datos de entrada sean válidos y cumplan con los criterios establecidos antes de ser procesados por la aplicación. Este enfoque ayuda a prevenir vulnerabilidades como la inyección de SQL.
+
+Para proteger la privacidad y la confidencialidad de la información transmitida entre el cliente y el servidor, he implementado HTTPS. Esta medida garantiza que los datos estén protegidos contra interceptaciones y manipulaciones no autorizadas durante la transmisión.
+
+Además, he configurado transacciones de base de datos para garantizar la consistencia de los datos durante operaciones que involucran múltiples acciones. Esta práctica ayuda a prevenir problemas como condiciones de carrera y actualizaciones concurrentes no deseadas, asegurando la integridad de los datos.
+
+Finalmente, mi controlador de errores está diseñado para manejar excepciones y errores de manera coherente en toda la aplicación. Esto no solo ayuda a mantener la estabilidad de la aplicación, sino que también protege la confidencialidad de la información sensible al evitar la divulgación de detalles internos al cliente.
+
+Quedo a disposición para discutir cualquier aspecto relacionado con la seguridad de nuestra API o para recibir sugerencias sobre posibles mejoras. Su retroalimentación es invaluable para mí.
