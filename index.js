@@ -23,6 +23,8 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         await sftp.connect(sftpConfig);
         // Subir la imagen al directorio /images/ en el servidor remoto
         await sftp.put(req.file.path, `users/obbara333market/profile_images/${req.file.originalname}`);
+        const imageUrl = `https://sftp.hidrive.ionos.com/users/obbara333market/Personal/profile_images/${req.file.originalname}`;
+        console.log(imageUrl)
         res.send('Imagen subida con éxito');
     } catch (err) {
         console.error('Error:', err.message);
