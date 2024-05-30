@@ -26,10 +26,13 @@ const userSchema = new mongoose.Schema({
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters long'],
     },
+    profile_picture: {
+      type: String 
+    },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      enum: ['usuario', 'admin', 'conductor'],
+      default: 'usuario',
     },
     QuickCar: {
       type: mongoose.Schema.Types.ObjectId,

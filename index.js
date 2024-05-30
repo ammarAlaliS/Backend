@@ -1,38 +1,37 @@
 const express = require('express');
-const dbConnection = require('./config/dbConnection');
-const dotenv = require('dotenv').config();
-const authRouter = require('./routes/authRoute');
-const bodyParser = require('body-parser');
-const { notFound, errorHandler } = require('./middleawares/errorHandle');
-const cookieParser = require('cookie-parser');
-const cors = require('cors'); 
+const multer = require('multer');
+const SftpClient = require('ssh2-sftp-client');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-dbConnection();
+// Configurar multer para manejar la carga de archivos
+const upload = multer({ dest: 'uploads/' });
 
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: 'Content-Type, Authorization',
-    credentials: true
-}));
+// Configuración de conexión SFTP
+const sftpConfig = {
+  host: "sftp.hidrive.ionos.com",
+  protocol: "sftp",
+  port: 22,
+  username: "Obbara333Market",
+  password: "Obbara_Market333.",
+};
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-
-// Ruta para manejar la raíz
-app.get('/', (req, res) => {
-  res.send('¡Bienvenido a ObbaraMarket_Backend!');
+// Ruta POST para subir imágenes
+app.post('/upload', upload.single('image'), async (req, res) => {
+    const sftp = new SftpClient();
+    try {
+        await sftp.connect(sftpConfig);
+        // Subir la imagen al directorio /images/ en el servidor remoto
+        await sftp.put(req.file.path, `users/obbara333market/profile_images/${req.file.originalname}`);
+        res.send('Imagen subida con éxito');
+    } catch (err) {
+        console.error('Error:', err.message);
+        res.status(500).send('Error al subir la imagen');
+    } finally {
+        await sftp.end();
+    }
 });
 
-app.use('/api/ObbaraMarket', authRouter);
-
-app.use(notFound);
-app.use(errorHandler);
-
-app.listen(PORT, () => {
-  console.log(`server is running at PORT ${PORT}`);
+app.listen(3000, () => {
+    console.log('Servidor Express escuchando en el puerto 3000');
 });

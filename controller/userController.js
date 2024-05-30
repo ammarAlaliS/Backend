@@ -4,25 +4,19 @@ const QuickCar = require("../models/quickCarModel")
 const asyncHandler = require("express-async-handler");
 const { validateMongoDbId } = require("../utilis/validateMongoDb");
 const { generateRefreshToken } = require("../config/refreshToken");
-const { isUserDelete } = require("../middleawares/authMiddleWare");
-const Joi = require('joi');
-const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
+const Joi = require('joi');
 
 
-const createUser = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  
-  // Verificar si ya existe un usuario con el mismo correo electrónico
-  const existingUser = await User.findOne({ 'global_user.email': email });
-  if (existingUser) {
-    return res.status(400).json({ message: "User Already Exists" });
-  }
 
-  // Si no existe un usuario con el mismo correo electrónico, crear uno nuevo
-  const newUser = await User.create(req.body);
-  res.json(newUser);
-});
+
+
+
+
+// =======================================================================================================================
+
+
+
 // create a driver user. 
 
 const schema = Joi.object({
@@ -318,7 +312,6 @@ const unBlockUser = asyncHandler(async(req,res) => {
 })
 
 module.exports = {
-  createUser,
   loginUserCtrl,
   getUsers,
   findUser,
@@ -329,6 +322,5 @@ module.exports = {
   handleRefreshToken,
   findDeletedAccounts,
   getAllDeleteAccount, 
-  createDriverUser
-
+  createDriverUser, 
 };

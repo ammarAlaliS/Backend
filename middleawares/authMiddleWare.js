@@ -2,60 +2,63 @@ const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 
-// verify the token
 
-const authMiddleware = asyncHandler(async(req,res,next) =>{
+// Middleware para verificar el token
+const authMiddleware = asyncHandler(async (req, res, next) => {
     let token; 
-    if (req?.headers?.authorization?.startsWith("Bearer")){
+    if (req?.headers?.authorization?.startsWith("Bearer")) {
         token = req.headers.authorization.split(' ')[1];
         try {
-            if(token){
-                const decoded= jwt.verify(token, process.env.JWT_SECRET)
+            if (token) {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 const user = await User.findById(decoded?.id);
-                req.user = user;
-                next();
+                if (user) {
+                    req.user = user;
+                    next();
+                } else {
+                    res.status(401).json({ error: "User not found" });
+                }
+            } else {
+                res.status(401).json({ error: "Token not provided" });
             }
         } catch (error) {
-            res.status(500).json({error:"Not Authorized token expired, Login again"})
+            res.status(401).json({ error: "Not authorized, token expired or invalid, login again" });
         }
-    }else{
-       throw new Error("There is not a Token attached to header")
+    } else {
+        res.status(401).json({ error: "Token not attached to header" });
     }
 }); 
 
-// verify is the user role is admin or user.
-
+// Middleware para verificar si el usuario es administrador
 const isAdmin = asyncHandler(async (req, res, next) => {
-    const user = req.user; // Obtener el usuario directamente de req.user
-    if (!user || user.role !== "admin") { // Verificar el rol directamente en el usuario
-        throw new Error("You are not an admin");
+    const user = req.user; 
+    if (!user || user.role !== "admin") { 
+        res.status(403).json({ error: "You are not an admin" });
     } else {
         next();
     }
 });
 
-// verify if the user is delete 
-
+// Middleware para verificar si la cuenta del usuario está eliminada
 const checkAccountStatus = asyncHandler(async (req, res, next) => {
-    const user = req.user; // Obtener el usuario directamente de req.user
+    const user = req.user; 
     if (!user) {
-        throw new Error("User not found");
+        res.status(404).json({ error: "User not found" });
+    } else if (user.isDelete) {
+        res.status(403).json({ error: "User account has been deleted" });
+    } else {
+        next();
     }
-
-    if (user.isDelete) {
-        throw new Error("User account has been deleted");
-    }
-
-    next();
 });
 
+// Middleware para obtener usuarios con cuentas eliminadas
 const AccountStatus = asyncHandler(async (req, res, next) => {
     try {
         const users = await User.find({ isDelete: true });
         req.usersWithDeletedAccounts = users;
         next();
     } catch (error) {
-        next(error); 
+        res.status(500).json({ error: "Failed to fetch users with deleted accounts" });
     }
 });
 
