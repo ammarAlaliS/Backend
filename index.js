@@ -1,3 +1,5 @@
+
+
 const express = require('express');
 const dbConnection = require('./config/dbConnection');
 const dotenv = require('dotenv').config();
@@ -18,9 +20,8 @@ app.use(cors({
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true
 }));
-
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 // Ruta para manejar la raíz
