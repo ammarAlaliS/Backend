@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const validator = require('validator');
 
 const userSchema = new mongoose.Schema({
+  global_user: {
     first_name: {
       type: String,
       required: [true, 'First name is required'],
@@ -19,7 +20,7 @@ const userSchema = new mongoose.Schema({
       unique: true,
       match: [/.+\@.+\..+/, 'Please fill a valid email address'],
       lowercase: true,
-      index: true, // Indexing email for better performance
+      index: true,
     },
     password: {
       type: String,
@@ -29,7 +30,7 @@ const userSchema = new mongoose.Schema({
     profile_img_url: {
       type: String,
       validate: {
-        validator: function(v) {
+        validator: function (v) {
           return validator.isURL(v);
         },
         message: 'Invalid URL for profile image',
@@ -40,32 +41,31 @@ const userSchema = new mongoose.Schema({
       enum: ['user', 'admin'],
       default: 'user',
     },
-    QuickCar: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'QuickCar',
-      required: false,
-    },
   },
-  {
-    timestamps: true,
-  }
-);
+  QuickCar: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'QuickCar',
+    required: false,
+  },
+}, {
+  timestamps: true,
+});
 
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) { // Corrected reference to password field
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('global_user.password')) {
     return next();
   }
   try {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt); // Corrected reference to password field
+    this.global_user.password = await bcrypt.hash(this.global_user.password, salt);
     next();
   } catch (error) {
     next(error);
   }
 });
 
-userSchema.methods.isPasswordMatched = async function(enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password); // Corrected reference to password field
+userSchema.methods.isPasswordMatched = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.global_user.password);
 };
 
 module.exports = mongoose.model('User', userSchema);
