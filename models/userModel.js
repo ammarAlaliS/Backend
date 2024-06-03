@@ -38,15 +38,17 @@ const userSchema = new mongoose.Schema({
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
+      enum: ['user', 'admin', 'driver'],
       default: 'user',
     },
+   
   },
   QuickCar: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'QuickCar',
     required: false,
   },
+ 
 }, {
   timestamps: true,
 });

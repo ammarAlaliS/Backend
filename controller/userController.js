@@ -105,32 +105,52 @@ const createDriverUser = asyncHandler(async (req, res) => {
 // create Loggin controller
 const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  // check if user exist or not
-  const findUser = await User.findOne({ 'global_user.email': email }).populate('global_user.QuickCar');
-  if (findUser && (await findUser.isPasswordMatched(password))) {
-    // generate a new token
+
+  try {
+    // Buscar al usuario por correo electrónico y asegurarse de que exista
+    const findUser = await User.findOne({ 'global_user.email': email });
+    if (!findUser || !(await findUser.isPasswordMatched(password))) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Si el usuario tiene asignado un QuickCar, poblarlo
+    let userWithQuickCar = findUser;
+    if (findUser.QuickCar) {
+      userWithQuickCar = await findUser.populate('QuickCar').execPopulate();
+    }
+
+    // Generar un nuevo token de actualización
     const refreshToken = await generateRefreshToken(findUser._id);
+
+    // Actualizar el token de actualización en la base de datos
     const updateUser = await User.findByIdAndUpdate(
       findUser._id,
       { 'global_user.refreshToken': refreshToken },
       { new: true }
     );
+
+    // Configurar la cookie de refreshToken
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      maxAge: 72 * 60 * 60 * 1000,
+      maxAge: 72 * 60 * 60 * 1000, // 72 horas de validez
     });
+
+    // Enviar la respuesta al cliente con el token de acceso y la información del usuario
     res.json({
-      _id: findUser._id,
-      first_name: findUser.global_user.first_name,
-      last_name: findUser.global_user.last_name,
-      email: findUser.global_user.email,
-      token: generateToken(findUser._id),
-      QuickCar: findUser.global_user.QuickCar || null, // Agrega el objeto QuickCar si existe, sino null
+      _id: userWithQuickCar._id,
+      first_name: userWithQuickCar.global_user.first_name,
+      last_name: userWithQuickCar.global_user.last_name,
+      email: userWithQuickCar.global_user.email,
+      profile_img_url: userWithQuickCar.global_user.profile_img_url || null,
+      token: generateToken(userWithQuickCar._id),
+      QuickCar: userWithQuickCar.QuickCar || null, // Agregar el objeto QuickCar si existe, sino null
     });
-  } else {
-    throw new Error('Invalid Credentials');
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
 
 
 // handle refresh token 
@@ -171,8 +191,7 @@ const updateUser = asyncHandler(async (req, res) => {
 
 const getUsers = asyncHandler(async (req, res) => {
   try {
-    // Usar populate para obtener el objeto completo de QuickCar
-    const users = await User.find().populate('global_user.QuickCar');
+    const users = await User.find().populate('global_user');
     res.json(users);
   } catch (error) {
     // Lanzar el error para ser manejado por asyncHandler
