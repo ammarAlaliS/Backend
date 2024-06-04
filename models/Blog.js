@@ -1,11 +1,14 @@
 const mongoose = require('mongoose');
 
 const blogSchema = new mongoose.Schema({
+    blog_image_url: {
+        type: String,
+    },
     title: {
         type: String,
         required: true,
     },
-    content: {
+    blog_description: {
         type: String,
         required: true,
     },
@@ -13,9 +16,6 @@ const blogSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-    },
-    image: {
-        type: String,
     },
     tags: {
         type: [String],

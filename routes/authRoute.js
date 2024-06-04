@@ -3,6 +3,8 @@ const { createDriverUser, loginUserCtrl, getUsers, findUser, deleteUser, updateU
 const { authMiddleware, isAdmin, checkAccountStatus, AccountStatus } = require('../middleawares/authMiddleWare');
 const { createTrip, joinTrip } = require('../controller/TripController');
 const { upload, createUser } = require('../controller/imageController');
+const { createBlog } = require('../controller/BlogController')
+const { addComment } = require('../controller/CommentController');
 
 const router = express.Router();
 
@@ -11,6 +13,12 @@ router.post("/register", upload, createUser);
 
 router.post("/login", loginUserCtrl);
 router.post("/driver/register", authMiddleware, createDriverUser);
+
+// blog routes. 
+router.post('/create/blog', authMiddleware, isAdmin, createBlog );
+
+// comment routes. 
+router.post('/blogs/:blogId/comments', authMiddleware, addComment);
 
 // Authenticated routes
 router.get("/users", getUsers);

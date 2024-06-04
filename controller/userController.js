@@ -141,9 +141,10 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
       first_name: userWithQuickCar.global_user.first_name,
       last_name: userWithQuickCar.global_user.last_name,
       email: userWithQuickCar.global_user.email,
+      role: userWithQuickCar.global_user.role,
       profile_img_url: userWithQuickCar.global_user.profile_img_url || null,
       token: generateToken(userWithQuickCar._id),
-      QuickCar: userWithQuickCar.QuickCar || null, // Agregar el objeto QuickCar si existe, sino null
+      QuickCar: userWithQuickCar.QuickCar || null, 
     });
   } catch (error) {
     console.error(error);
