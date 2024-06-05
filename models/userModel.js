@@ -4,6 +4,11 @@ const validator = require('validator');
 
 const userSchema = new mongoose.Schema({
   global_user: {
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: () => new mongoose.Types.ObjectId(),
+      autoCreate: true
+    },
     first_name: {
       type: String,
       required: [true, 'First name is required'],
@@ -41,16 +46,20 @@ const userSchema = new mongoose.Schema({
       enum: ['user', 'admin', 'driver'],
       default: 'user',
     },
-   
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    }
   },
   QuickCar: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'QuickCar',
     required: false,
-  },
- 
-}, {
-  timestamps: true,
+  }
 });
 
 userSchema.pre('save', async function (next) {
@@ -69,5 +78,13 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.isPasswordMatched = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.global_user.password);
 };
+
+// Customize toJSON to exclude _id and __v
+userSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    delete ret._id;
+    delete ret.__v;
+  }
+});
 
 module.exports = mongoose.model('User', userSchema);

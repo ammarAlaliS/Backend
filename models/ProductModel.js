@@ -1,4 +1,5 @@
 
+const { required } = require('joi');
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
@@ -11,8 +12,13 @@ const productSchema = new mongoose.Schema({
         enum: ['Coche', 'Moto'],
         required: true,
     },
+    productModel: {
+        type: String,
+        required: true,
+    },
     description: {
         type: String,
+        required: true,
     },
     price: {
         type: Number,

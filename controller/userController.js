@@ -50,13 +50,13 @@ const createDriverUser = asyncHandler(async (req, res) => {
     fare,
   } = req.body;
 
-  // Validar los datos de entrada
+  // Validate the input data
   const { error } = schema.validate(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
   const user = req.user;
 
-  // Verificar si el usuario ya tiene un QuickCarDriver
+  // Check if the user already has a QuickCarDriver
   if (user.global_user.QuickCar) {
     return res.status(400).json({ message: "El usuario ya está registrado como conductor" });
   }
@@ -65,52 +65,59 @@ const createDriverUser = asyncHandler(async (req, res) => {
   session.startTransaction();
 
   try {
-    const quickCarDriver = new QuickCar({
-      driver_information: {
-        vehicleType,
-        vehicleModel,
-        startLocation,
-        endLocation,
-        startTime,
-        endTime,
-        regularDays,
-        availableSeats,
-        pricePerSeat,
-        image,
-        drivingLicense,
-        fare,
-      }
+    const quickCar = new QuickCar({
+      vehicleType,
+      vehicleModel,
+      startLocation,
+      endLocation,
+      startTime,
+      endTime,
+      regularDays,
+      availableSeats,
+      pricePerSeat,
+      image,
+      drivingLicense,
+      fare,
     });
 
-    const userDriver = await quickCarDriver.save({ session });
+    const savedQuickCar = await quickCar.save({ session });
 
-    user.global_user.QuickCar = userDriver._id;
+    user.global_user.QuickCar = savedQuickCar._id;
     await user.save({ session });
 
     await session.commitTransaction();
     session.endSession();
 
-    res.status(201).json({ user, driver_information: userDriver });
+    res.status(201).json({ global_user: user.global_user, quickCar: savedQuickCar });
 
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    console.error("Error creando conductor:", error);
-    res.status(500).json({ message: "Error creando conductor", error: error.message });
+    console.error("Error creating QuickCar:", error);
+    res.status(500).json({ message: "Error creating QuickCar", error: error.message });
   }
 });
 
 
 
-// create Loggin controller
+
 const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    console.log('Email:', email); // Imprime el email recibido para depuración
+    console.log('Password:', password); // Imprime la contraseña recibida para depuración (solo en desarrollo)
+
     // Buscar al usuario por correo electrónico y asegurarse de que exista
     const findUser = await User.findOne({ 'global_user.email': email });
-    if (!findUser || !(await findUser.isPasswordMatched(password))) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+    if (!findUser) {
+      return res.status(401).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Verificar la contraseña
+    const isMatch = await findUser.isPasswordMatched(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Contraseña inválida' });
     }
 
     // Si el usuario tiene asignado un QuickCar, poblarlo
@@ -144,13 +151,14 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
       role: userWithQuickCar.global_user.role,
       profile_img_url: userWithQuickCar.global_user.profile_img_url || null,
       token: generateToken(userWithQuickCar._id),
-      QuickCar: userWithQuickCar.QuickCar || null, 
+      QuickCar: userWithQuickCar.QuickCar || null,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: 'Error Interno del Servidor' });
   }
 });
+
 
 
 

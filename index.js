@@ -1,5 +1,3 @@
-
-
 const express = require('express');
 const dbConnection = require('./config/dbConnection');
 const dotenv = require('dotenv').config();
@@ -8,6 +6,7 @@ const bodyParser = require('body-parser');
 const { notFound, errorHandler } = require('./middleawares/errorHandle');
 const cookieParser = require('cookie-parser');
 const cors = require('cors'); 
+const setupSwaggerDocs = require('./swaggerDocs'); // Asegúrate de que la ruta sea correcta
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,7 +30,12 @@ app.get('/', (req, res) => {
 
 app.use('/api/ObbaraMarket', authRouter);
 
+// Setup Swagger documentation
+setupSwaggerDocs(app, PORT);
+
+// Middleware para manejar rutas no encontradas
 app.use(notFound);
+// Middleware para manejar errores
 app.use(errorHandler);
 
 app.listen(PORT, () => {
