@@ -12,13 +12,14 @@ const blogSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    author: {
+ 
+    tags: {
+        type: [String],
+    },
+    User: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-    },
-    tags: {
-        type: [String],
     },
     comments: [{
         type: mongoose.Schema.Types.ObjectId,

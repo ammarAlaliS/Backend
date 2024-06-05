@@ -9,44 +9,8 @@ const { getProducts, createProduct } = require('../controller/ProductsController
 
 const router = express.Router();
 
-/**
- * @swagger
- * tags:
- *   name: Autenticacion y manejo de inicio sesion
- *   description: manejo de inicio de sesion
- */
 
 
-
-/**
- * @swagger
- * /api/ObbaraMarket/login: 
- *   post:
- *     summary: Inicio de sesión en la aplicacion
- *     tags: 
- *       - Autenticacion y manejo de registros
- *     description: "Inicia sesión con las credenciales proporcionadas. Ingresa el correo y la contraseña para iniciar sesión."
- *     requestBody: 
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email: 
- *                 type: string
- *                 description: Email del usuario.
- *               password: 
- *                 type: string
- *                 description: Contraseña del usuario.
- *     responses: 
- *       200:
- *         description: Usuario inició sesión exitosamente.
- *       401:
- *         description: Credenciales inválidas.
- */
-
-router.post("/login", loginUserCtrl);
 
 
 /**
@@ -75,7 +39,7 @@ router.post('/create/blog', authMiddleware, isAdmin, createBlog);
 /**
  * @swagger
  * tags:
- *   name: Products
+ *   name: Productos
  *   description: Product management
  */
 
@@ -84,7 +48,7 @@ router.post('/create/blog', authMiddleware, isAdmin, createBlog);
  * /api/ObbaraMarket/get/products:
  *   get:
  *     summary: Get products
- *     tags: [Products]
+ *     tags: [Productos]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -100,7 +64,7 @@ router.get('/get/products', authMiddleware, getProducts);
  * /api/ObbaraMarket/create/products:
  *   post:
  *     summary: Create a new product
- *     tags: [Products]
+ *     tags: [Productos]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -114,7 +78,7 @@ router.post('/create/products', authMiddleware, createProduct);
 /**
  * @swagger
  * tags:
- *   name: Comments
+ *   name: Comentarios
  *   description: Comment management
  */
 
@@ -123,7 +87,7 @@ router.post('/create/products', authMiddleware, createProduct);
  * /api/ObbaraMarket/blogs/{blogId}/comments:
  *   post:
  *     summary: Add a comment to a blog
- *     tags: [Comments]
+ *     tags: [Comentarios]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -153,7 +117,7 @@ router.post('/blog/comment/:blogId/', authMiddleware, addComment);
 /**
  * @swagger
  * tags:
- *   name: Users
+ *   name: Usuarios
  *   description: User management
  */
 /**
@@ -162,7 +126,7 @@ router.post('/blog/comment/:blogId/', authMiddleware, addComment);
  *   post:
  *     summary: Registrar a un nuevo usuario
  *     tags: 
- *       - Users
+ *       - Usuarios
  *     description: Registrar un nuevo usuario con la información proporcionada.
  *     requestBody:
  *       required: true
@@ -205,7 +169,7 @@ router.post("/register", upload, createUser);
  *     summary: Registro de conductor en la aplicación
  *     description: Permite a un usuario registrarse como conductor en la aplicación.
  *     tags:
- *       - Users
+ *       - Usuarios
  *     requestBody:
  *       required: true
  *       content:
@@ -324,7 +288,7 @@ router.post("/driver/register", authMiddleware, createDriverUser);
  * /api/ObbaraMarket/users:
  *   get:
  *     summary: Get users
- *     tags: [Users]
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -340,7 +304,7 @@ router.get("/users", getUsers);
  * /api/ObbaraMarket/user/{id}:
  *   get:
  *     summary: Get a user by ID
- *     tags: [Users]
+ *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -356,37 +320,7 @@ router.get("/users", getUsers);
  *       404:
  *         description: User not found
  */
-router.get("/user/:id", authMiddleware, isAdmin, findUser);
 
-/**
- * @swagger
- * /api/ObbaraMarket/refreshToken:
- *   get:
- *     summary: Refresh token
- *     tags: [Users]
- *     responses:
- *       200:
- *         description: Token refreshed successfully
- *       400:
- *         description: Bad request
- */
-router.get("/refreshToken", handleRefreshToken);
-
-/**
- * @swagger
- * /api/ObbaraMarket/deleted-accounts:
- *   get:
- *     summary: Get deleted accounts
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Deleted accounts retrieved successfully
- *       400:
- *         description: Bad request
- */
-router.get("/deleted-accounts", authMiddleware, isAdmin, findDeletedAccounts);
 
 /**
  * @swagger
@@ -427,100 +361,6 @@ router.post("/create-trip", authMiddleware, createTrip);
  */
 router.post('/subscribeToTrip/:tripId', authMiddleware, joinTrip);
 
-/**
- * @swagger
- * /api/ObbaraMarket/user/{id}:
- *   delete:
- *     summary: Delete a user by ID
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: User ID
- *     responses:
- *       200:
- *         description: User deleted successfully
- *       404:
- *         description: User not found
- */
-router.delete("/user/:id", authMiddleware, isAdmin, deleteUser);
 
-/**
- * @swagger
- * /api/ObbaraMarket/user/update:
- *   put:
- *     summary: Update user details
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               email:
- *                 type: string
- *     responses:
- *       200:
- *         description: User updated successfully
- *       400:
- *         description: Bad request
- */
-router.put("/user/update", authMiddleware, updateUser);
-
-/**
- * @swagger
- * /api/ObbaraMarket/user/block/{id}:
- *   put:
- *     summary: Block a user by ID
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: User ID
- *     responses:
- *       200:
- *         description: User blocked successfully
- *       404:
- *         description: User not found
- */
-router.put("/user/block/:id", authMiddleware, isAdmin, blockUser);
-
-/**
- * @swagger
- * /api/ObbaraMarket/user/unblock/{id}:
- *   put:
- *     summary: Unblock a user by ID
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: User ID
- *     responses:
- *       200:
- *         description: User unblocked successfully
- *       404:
- *         description: User not found
- */
-router.put("/user/unblock/:id", authMiddleware, isAdmin, unBlockUser);
 
 module.exports = router;

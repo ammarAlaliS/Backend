@@ -109,7 +109,10 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
     console.log('Password:', password); // Imprime la contraseña recibida para depuración (solo en desarrollo)
 
     // Buscar al usuario por correo electrónico y asegurarse de que exista
-    const findUser = await User.findOne({ 'global_user.email': email });
+    const findUser = await User.findOne({ 'global_user.email': email })
+    .populate('global_user.QuickCar')
+    .populate('Blog');
+    
     if (!findUser) {
       return res.status(401).json({ message: 'Usuario no encontrado' });
     }
@@ -118,12 +121,6 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
     const isMatch = await findUser.isPasswordMatched(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Contraseña inválida' });
-    }
-
-    // Si el usuario tiene asignado un QuickCar, poblarlo
-    let userWithQuickCar = findUser;
-    if (findUser.QuickCar) {
-      userWithQuickCar = await findUser.populate('QuickCar').execPopulate();
     }
 
     // Generar un nuevo token de actualización
@@ -144,14 +141,15 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
 
     // Enviar la respuesta al cliente con el token de acceso y la información del usuario
     res.json({
-      _id: userWithQuickCar._id,
-      first_name: userWithQuickCar.global_user.first_name,
-      last_name: userWithQuickCar.global_user.last_name,
-      email: userWithQuickCar.global_user.email,
-      role: userWithQuickCar.global_user.role,
-      profile_img_url: userWithQuickCar.global_user.profile_img_url || null,
-      token: generateToken(userWithQuickCar._id),
-      QuickCar: userWithQuickCar.QuickCar || null,
+      _id: findUser._id,
+      first_name: findUser.global_user.first_name,
+      last_name: findUser.global_user.last_name,
+      email: findUser.global_user.email,
+      role: findUser.global_user.role,
+      profile_img_url: findUser.global_user.profile_img_url || null,
+      token: generateToken(findUser._id),
+      QuickCar: findUser.global_user.QuickCar || null,
+      Blog: findUser.Blog || null
     });
   } catch (error) {
     console.error(error);
@@ -196,17 +194,29 @@ const updateUser = asyncHandler(async (req, res) => {
 });
 
 
-// get all users
-
 const getUsers = asyncHandler(async (req, res) => {
   try {
-    const users = await User.find().populate('global_user');
-    res.json(users);
+    const users = await User.find()
+      .populate({ path: 'global_user.QuickCar', options: { retainNullValues: true } })
+      .populate({ path: 'Blog', options: { retainNullValues: true } });
+
+    res.json(users.map(user => ({
+      _id: user._id,
+      first_name: user.global_user.first_name,
+      last_name: user.global_user.last_name,
+      email: user.global_user.email,
+      role: user.global_user.role,
+      profile_img_url: user.global_user.profile_img_url || null,
+      QuickCar: user.global_user.QuickCar || null,
+      Blog: user.Blog || null,
+    })));
   } catch (error) {
     // Lanzar el error para ser manejado por asyncHandler
-    throw new Error(error);
+    throw new Error(error.message);
   }
 });
+
+
 
 // get delete account 
 

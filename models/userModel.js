@@ -4,11 +4,6 @@ const validator = require('validator');
 
 const userSchema = new mongoose.Schema({
   global_user: {
-    _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      default: () => new mongoose.Types.ObjectId(),
-      autoCreate: true
-    },
     first_name: {
       type: String,
       required: [true, 'First name is required'],
@@ -25,7 +20,7 @@ const userSchema = new mongoose.Schema({
       unique: true,
       match: [/.+\@.+\..+/, 'Please fill a valid email address'],
       lowercase: true,
-      index: true,
+      index: true, // Indexing email for better performance
     },
     password: {
       type: String,
@@ -35,7 +30,7 @@ const userSchema = new mongoose.Schema({
     profile_img_url: {
       type: String,
       validate: {
-        validator: function (v) {
+        validator: function(v) {
           return validator.isURL(v);
         },
         message: 'Invalid URL for profile image',
@@ -43,23 +38,20 @@ const userSchema = new mongoose.Schema({
     },
     role: {
       type: String,
-      enum: ['user', 'admin', 'driver'],
+      enum: ['user', 'admin'],
       default: 'user',
     },
-    createdAt: {
-      type: Date,
-      default: Date.now
+    QuickCar: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'QuickCar',
+      required: false,
     },
-    updatedAt: {
-      type: Date,
-      default: Date.now
-    }
   },
-  QuickCar: {
+  Blog: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'QuickCar',
+    ref: 'Blog',
     required: false,
-  }
+  }],
 });
 
 userSchema.pre('save', async function (next) {
@@ -78,13 +70,5 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.isPasswordMatched = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.global_user.password);
 };
-
-// Customize toJSON to exclude _id and __v
-userSchema.set('toJSON', {
-  transform: function (doc, ret) {
-    delete ret._id;
-    delete ret.__v;
-  }
-});
 
 module.exports = mongoose.model('User', userSchema);

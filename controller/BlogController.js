@@ -1,40 +1,35 @@
 const asyncHandler = require('express-async-handler');
 const Blog = require('../models/Blog');
+const User = require('../models/User');
 
 // Controlador para crear un nuevo blog
 const createBlog = asyncHandler(async (req, res) => {
-    try {
-        const { blog_image_url, title, blog_description, tags } = req.body;
-        
-        // Extraer el ID del usuario del token JWT
-        const userId = req.user._id;
+    const { blog_image_url, title, blog_description, tags } = req.body;
+    
+    // Extraer el ID del usuario del token JWT
+    const userId = req.user._id;
 
-        // Crear el nuevo blog
-        const newBlog = new Blog({
-            blog_image_url,
-            title,
-            blog_description,
-            author: userId, // Asignar el ID del usuario
-            tags,
-        });
+    // Crear el nuevo blog
+    const newBlog = new Blog({
+        blog_image_url,
+        title,
+        blog_description,
+        User: userId, // Asignar el ID del usuario
+        tags,
+    });
 
-        // Guardar el blog en la base de datos
-        await newBlog.save();
+    // Guardar el blog en la base de datos
+    await newBlog.save();
 
-        res.status(201).json(newBlog);
-    } catch (error) {
-        // Manejar cualquier error capturado
-        console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    // Actualizar el documento del usuario para incluir el ObjectId del blog creado
+    await User.findByIdAndUpdate(userId, { $push: { Blog: newBlog._id } });
+
+    res.status(201).json(newBlog);
 });
-
-
-
 
 // Controlador para obtener todos los blogs
 const getAllBlogs = asyncHandler(async (req, res) => {
-    const blogs = await Blog.find().populate('author', 'global_user.first_name global_user.last_name');
+    const blogs = await Blog.find().populate('User', 'first_name last_name');
 
     res.status(200).json(blogs);
 });
@@ -43,7 +38,7 @@ const getAllBlogs = asyncHandler(async (req, res) => {
 const getBlogById = asyncHandler(async (req, res) => {
     const blogId = req.params.id;
 
-    const blog = await Blog.findById(blogId).populate('author', 'global_user.first_name global_user.last_name').populate('comments');
+    const blog = await Blog.findById(blogId).populate('User', 'first_name last_name').populate('comments');
 
     if (!blog) {
         return res.status(404).json({ error: 'Blog not found' });
@@ -91,4 +86,3 @@ module.exports = {
     updateBlogById,
     deleteBlogById,
 };
-
