@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
       unique: true,
       match: [/.+\@.+\..+/, 'Please fill a valid email address'],
       lowercase: true,
-      index: true, // Indexing email for better performance
+      index: true, 
     },
     password: {
       type: String,
@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema({
     ref: 'Blog',
     required: false,
   }],
+
 });
 
 userSchema.pre('save', async function (next) {

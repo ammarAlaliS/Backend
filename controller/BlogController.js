@@ -1,35 +1,101 @@
+const { Storage } = require('@google-cloud/storage');
+const multer = require('multer');
 const asyncHandler = require('express-async-handler');
 const Blog = require('../models/Blog');
-const User = require('../models/User');
+const User = require('../models/userModel');
 
-// Controlador para crear un nuevo blog
-const createBlog = asyncHandler(async (req, res) => {
-    const { blog_image_url, title, blog_description, tags } = req.body;
-    
-    // Extraer el ID del usuario del token JWT
-    const userId = req.user._id;
+// Configuración de Google Cloud Storage
+const storage = new Storage({
+  projectId: process.env.GCLOUD_PROJECT_ID,
+  credentials: {
+    private_key: process.env.GCLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    client_email: process.env.GCLOUD_CLIENT_EMAIL,
+  },
+});
 
-    // Crear el nuevo blog
-    const newBlog = new Blog({
-        blog_image_url,
-        title,
-        blog_description,
-        User: userId, // Asignar el ID del usuario
-        tags,
+const bucketName = 'quickcar';
+
+// Configuración de multer
+const multerStorage = multer.memoryStorage();
+const upload_blog_img = multer({ storage: multerStorage }).single('blog_image_url');
+
+// Función para subir la imagen a Google Cloud Storage
+const uploadImageToStorage = (file) => {
+  return new Promise((resolve, reject) => {
+    const blob = storage.bucket(bucketName).file(Date.now() + "_" + file.originalname);
+    const blobStream = blob.createWriteStream({ resumable: false });
+
+    blobStream.on('error', (err) => {
+      reject(err);
     });
 
-    // Guardar el blog en la base de datos
-    await newBlog.save();
+    blobStream.on('finish', () => {
+      const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
+      resolve(publicUrl);
+    });
 
-    // Actualizar el documento del usuario para incluir el ObjectId del blog creado
-    await User.findByIdAndUpdate(userId, { $push: { Blog: newBlog._id } });
+    blobStream.end(file.buffer);
+  });
+};
 
-    res.status(201).json(newBlog);
+// Función para crear un blog
+const createBlog = asyncHandler(async (req, res) => {
+    try {
+        const { title, tags, blog_description } = req.body;
+
+        // Validar campos requeridos
+        if (!title || !blog_description) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        // Extraer el ID del usuario del token JWT
+        const userId = req.user._id;
+
+        // Procesar imagen del blog si está presente
+        let blogImageUrl;
+        if (req.file) {
+            // Subir la imagen a Google Cloud Storage
+            blogImageUrl = await uploadImageToStorage(req.file);
+        } else {
+            return res.status(400).json({ message: 'Blog image is required' });
+        }
+
+        // Convertir los tags de cadena separada por comas a array si es necesario
+        const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
+
+        // Crear el nuevo blog
+        const newBlog = new Blog({
+            blog_image_url: blogImageUrl,
+            title,
+            blog_description,
+            user: userId, // Asignar el ID del usuario
+            tags: tagsArray,
+        });
+
+        // Guardar el blog en la base de datos
+        await newBlog.save();
+
+        // Obtener los detalles completos del usuario
+        const user = await User.findById(userId);
+
+        // Agregar la referencia del blog al usuario
+        user.Blog.push(newBlog._id);
+        await user.save();
+
+        res.status(201).json(newBlog);
+    } catch (error) {
+        console.error("Error creating blog:", error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
+
+
+// ============================================================================================================================================
+
 
 // Controlador para obtener todos los blogs
 const getAllBlogs = asyncHandler(async (req, res) => {
-    const blogs = await Blog.find().populate('User', 'first_name last_name');
+    const blogs = await Blog.find().populate('User');
 
     res.status(200).json(blogs);
 });
@@ -85,4 +151,5 @@ module.exports = {
     getBlogById,
     updateBlogById,
     deleteBlogById,
+    upload_blog_img
 };

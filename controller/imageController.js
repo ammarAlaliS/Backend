@@ -82,4 +82,4 @@ const createUser = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { upload, createUser };
+module.exports = { upload, createUser, uploadImageToStorage };
