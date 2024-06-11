@@ -95,9 +95,17 @@ const createBlog = asyncHandler(async (req, res) => {
 
 // Controlador para obtener todos los blogs
 const getAllBlogs = asyncHandler(async (req, res) => {
-    const blogs = await Blog.find().populate('User');
+    try {
+        // Obtener todos los blogs de la base de datos
+        const blogs = await Blog.find();
 
-    res.status(200).json(blogs);
+        // Enviar la respuesta con los blogs encontrados
+        res.status(200).json(blogs);
+    } catch (error) {
+        // Si ocurre un error, enviar una respuesta de error al cliente
+        console.error('Error fetching blogs:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
 // Controlador para obtener un blog por su ID
@@ -148,6 +156,7 @@ const deleteBlogById = asyncHandler(async (req, res) => {
 module.exports = {
     createBlog,
     getAllBlogs,
+    
     getBlogById,
     updateBlogById,
     deleteBlogById,

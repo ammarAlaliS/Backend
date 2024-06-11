@@ -3,7 +3,7 @@ const { createDriverUser, loginUserCtrl, getUsers, findUser, deleteUser, updateU
 const { authMiddleware, isAdmin, checkAccountStatus, AccountStatus } = require('../middleawares/authMiddleWare');
 const { createTrip, joinTrip } = require('../controller/TripController');
 const { upload, createUser } = require('../controller/imageController');
-const { createBlog , upload_blog_img } = require('../controller/BlogController');
+const { createBlog , upload_blog_img , getAllBlogs } = require('../controller/BlogController');
 const { addComment } = require('../controller/CommentController');
 const { getProducts, createProduct } = require('../controller/ProductsController');
 
@@ -34,6 +34,7 @@ const router = express.Router();
  *         description: Bad request
  */
 router.post('/create/blog', authMiddleware, isAdmin, upload_blog_img ,  createBlog);
+router.get('/blogs', getAllBlogs)
 
 /**
  * @swagger
