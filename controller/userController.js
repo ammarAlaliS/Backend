@@ -99,7 +99,7 @@ const createDriverUser = asyncHandler(async (req, res) => {
 });
 
 
-
+// ===================================================================================================================================================================
 
 const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -157,7 +157,7 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
   }
 });
 
-
+// ============================================================================================================================================================
 
 
 // handle refresh token 
@@ -165,6 +165,8 @@ const handleRefreshToken = asyncHandler(async(req, res) => {
   const cookie = req.cookies;
   if (!cookie?.refreshToken) throw new Error("Not Refresh Token in Cookies")
 })
+
+// ============================================================================================================================================================
 
 // update a user
 
@@ -193,7 +195,7 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
-
+// ===============================================================================================================================================================
 const getUsers = asyncHandler(async (req, res) => {
   try {
     const users = await User.find()
@@ -216,7 +218,7 @@ const getUsers = asyncHandler(async (req, res) => {
   }
 });
 
-
+//====================================================================================================================================================================
 
 // get delete account 
 
@@ -228,6 +230,8 @@ const getAllDeleteAccount = asyncHandler(async (req, res) => {
       throw new Error("error");
   }
 });
+
+//=====================================================================================================================================================================
 
 // find a sigle user
 
@@ -244,6 +248,8 @@ const findUser = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
+// ======================================================================================================================================================================
 
 //  find deleted accounts
 

@@ -4,6 +4,9 @@ const asyncHandler = require('express-async-handler');
 const Blog = require('../models/Blog');
 const User = require('../models/userModel');
 
+
+// ==================================================================================================================================================
+
 // Configuración de Google Cloud Storage
 const storage = new Storage({
   projectId: process.env.GCLOUD_PROJECT_ID,
@@ -18,6 +21,8 @@ const bucketName = 'quickcar';
 // Configuración de multer
 const multerStorage = multer.memoryStorage();
 const upload_blog_img = multer({ storage: multerStorage }).single('blog_image_url');
+
+// ==================================================================================================================================================
 
 // Función para subir la imagen a Google Cloud Storage
 const uploadImageToStorage = (file) => {
@@ -37,6 +42,8 @@ const uploadImageToStorage = (file) => {
     blobStream.end(file.buffer);
   });
 };
+
+// ===================================================================================================================================================
 
 // Función para crear un blog
 const createBlog = asyncHandler(async (req, res) => {
@@ -107,6 +114,8 @@ const getAllBlogs = asyncHandler(async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+// ==============================================================================================================================================
 
 // Controlador para obtener un blog por su ID
 const getBlogById = asyncHandler(async (req, res) => {

@@ -279,8 +279,8 @@ router.post("/register", upload, createUser);
  */
 
 router.post("/login", loginUserCtrl);
-
 router.post("/driver/register", authMiddleware, createDriverUser);
+router.get("/user/:id", authMiddleware, findUser);
 
 
 /**
