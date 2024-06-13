@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('http');
 const dbConnection = require('./config/dbConnection');
 const dotenv = require('dotenv').config();
 const authRouter = require('./routes/authRoute');
@@ -6,7 +7,8 @@ const bodyParser = require('body-parser');
 const { notFound, errorHandler } = require('./middleawares/errorHandle');
 const cookieParser = require('cookie-parser');
 const cors = require('cors'); 
-const setupSwaggerDocs = require('./swaggerDocs'); // Asegúrate de que la ruta sea correcta
+const setupSwaggerDocs = require('./swaggerDocs'); 
+const { initialize } = require('./socketLogic');  // Importar la función initialize
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +40,13 @@ app.use(notFound);
 // Middleware para manejar errores
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Inicializar socket.io
+initialize(server);
+
+server.listen(PORT, () => {
   console.log(`server is running at PORT ${PORT}`);
 });
+
+module.exports = server;
