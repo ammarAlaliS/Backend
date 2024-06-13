@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema({
     ref: 'Blog',
     required: false,
   }],
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Like' }]
 
 });
 

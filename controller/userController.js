@@ -19,12 +19,12 @@ const schema = Joi.object({
   startLocation: Joi.string().required(),
   endLocation: Joi.string().required(),
   startTime: Joi.object({
-      hour: Joi.number().integer().min(0).max(23).required(),
-      minute: Joi.number().integer().min(0).max(59).required()
+    hour: Joi.number().integer().min(0).max(23).required(),
+    minute: Joi.number().integer().min(0).max(59).required()
   }).required(),
   endTime: Joi.object({
-      hour: Joi.number().integer().min(0).max(23).required(),
-      minute: Joi.number().integer().min(0).max(59).required()
+    hour: Joi.number().integer().min(0).max(23).required(),
+    minute: Joi.number().integer().min(0).max(59).required()
   }).required(),
   regularDays: Joi.array().items(Joi.string().valid('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo')).required(),
   availableSeats: Joi.number().integer().min(1).required(),
@@ -105,14 +105,10 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    console.log('Email:', email); // Imprime el email recibido para depuración
-    console.log('Password:', password); // Imprime la contraseña recibida para depuración (solo en desarrollo)
 
     // Buscar al usuario por correo electrónico y asegurarse de que exista
     const findUser = await User.findOne({ 'global_user.email': email })
-    .populate('global_user.QuickCar')
-    .populate('Blog');
-    
+
     if (!findUser) {
       return res.status(401).json({ message: 'Usuario no encontrado' });
     }
@@ -141,15 +137,11 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
 
     // Enviar la respuesta al cliente con el token de acceso y la información del usuario
     res.json({
-      _id: findUser._id,
       first_name: findUser.global_user.first_name,
       last_name: findUser.global_user.last_name,
-      email: findUser.global_user.email,
-      role: findUser.global_user.role,
       profile_img_url: findUser.global_user.profile_img_url || null,
       token: generateToken(findUser._id),
-      QuickCar: findUser.global_user.QuickCar || null,
-      Blog: findUser.Blog || null
+
     });
   } catch (error) {
     console.error(error);
@@ -161,7 +153,7 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
 
 
 // handle refresh token 
-const handleRefreshToken = asyncHandler(async(req, res) => {
+const handleRefreshToken = asyncHandler(async (req, res) => {
   const cookie = req.cookies;
   if (!cookie?.refreshToken) throw new Error("Not Refresh Token in Cookies")
 })
@@ -181,7 +173,7 @@ const updateUser = asyncHandler(async (req, res) => {
         first_name: req.body.first_name,
         last_name: req.body.last_name,
         email: req.body.email,
-       
+
       },
       {
         new: true,
@@ -224,10 +216,10 @@ const getUsers = asyncHandler(async (req, res) => {
 
 const getAllDeleteAccount = asyncHandler(async (req, res) => {
   try {
-      const users = req.usersWithDeletedAccounts;
-      res.json(users);
+    const users = req.usersWithDeletedAccounts;
+    res.json(users);
   } catch (error) {
-      throw new Error("error");
+    throw new Error("error");
   }
 });
 
@@ -239,7 +231,7 @@ const findUser = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     // console.log(id)
-     // execute the validateMongoDbId funtion
+    // execute the validateMongoDbId funtion
     validateMongoDbId(id)
 
     const user = await User.findById(id);
@@ -253,11 +245,11 @@ const findUser = asyncHandler(async (req, res) => {
 
 //  find deleted accounts
 
-const findDeletedAccounts = asyncHandler(async (req, res)=>{
+const findDeletedAccounts = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     // console.log(id)
-     // execute the validateMongoDbId funtion
+    // execute the validateMongoDbId funtion
     validateMongoDbId(id)
 
     const user = await User.findById(id);
@@ -288,8 +280,8 @@ const deleteUser = asyncHandler(async (req, res) => {
 const blockUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-   // execute the validateMongoDbId funtion
-   validateMongoDbId(id)
+  // execute the validateMongoDbId funtion
+  validateMongoDbId(id)
 
   try {
     // Verificar si el usuario existe
@@ -326,16 +318,16 @@ const blockUser = asyncHandler(async (req, res) => {
 
 // unblock a user
 
-const unBlockUser = asyncHandler(async(req,res) => {
-  const { id } = req.params; 
+const unBlockUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
 
-   // execute the validateMongoDbId funtion
-   validateMongoDbId(id)
+  // execute the validateMongoDbId funtion
+  validateMongoDbId(id)
   try {
     const unBlock = await User.findByIdAndUpdate(
       id,
       {
-        isBlocked:false,
+        isBlocked: false,
       },
       {
         new: true,
@@ -359,7 +351,7 @@ module.exports = {
   unBlockUser,
   handleRefreshToken,
   findDeletedAccounts,
-  getAllDeleteAccount, 
+  getAllDeleteAccount,
   createDriverUser
 
 };
