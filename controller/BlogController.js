@@ -103,8 +103,8 @@ const createBlog = asyncHandler(async (req, res) => {
 // Controlador para obtener todos los blogs
 const getAllBlogs = asyncHandler(async (req, res) => {
     try {
-        // Obtener todos los blogs de la base de datos
-        const blogs = await Blog.find();
+        // Obtener todos los blogs de la base de datos, incluyendo los likes poblados
+        const blogs = await Blog.find().populate('likes');
 
         // Enviar la respuesta con los blogs encontrados
         res.status(200).json(blogs);
