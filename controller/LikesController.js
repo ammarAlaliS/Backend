@@ -13,18 +13,25 @@ const toggleLike = async (req, res) => {
         const existingLike = await Like.findOne({ user: userId, blog: blogId });
 
         if (existingLike) {
-            // Si ya existe un like, actualizar userSubcribe a false
-            existingLike.userSubcribe = false;
+            // Alternar el estado de userSubcribe
+            existingLike.userSubcribe = !existingLike.userSubcribe;
             await existingLike.save();
 
             // Actualizar el contador de likes en el blog
             const totalLikes = await Like.countDocuments({ blog: blogId, userSubcribe: true });
 
+            // Actualizar el contador de likes en el blog y el estado de like en el array de likes del blog
+            if (existingLike.userSubcribe) {
+                await Blog.findByIdAndUpdate(blogId, { $push: { likes: existingLike._id } });
+            } else {
+                await Blog.findByIdAndUpdate(blogId, { $pull: { likes: existingLike._id } });
+            }
+
             // Emitir evento a todos los clientes conectados
             emitEvent('likeUpdated', { blogId, likes: totalLikes });
 
             // Responder con el resultado actualizado
-            return res.status(200).json({ blogId, userId, likes: totalLikes });
+            return res.status(200).json({ blogId, userId, likes: totalLikes, likeSubcribe: existingLike.userSubcribe });
         } else {
             // Si no existe, se agrega el like con userSubcribe en true
             const newLike = new Like({
@@ -37,11 +44,14 @@ const toggleLike = async (req, res) => {
             // Actualizar el contador de likes en el blog
             const totalLikes = await Like.countDocuments({ blog: blogId, userSubcribe: true });
 
+            // Agregar el like al array de likes del blog
+            await Blog.findByIdAndUpdate(blogId, { $push: { likes: newLike._id } });
+
             // Emitir evento a todos los clientes conectados
             emitEvent('likeUpdated', { blogId, likes: totalLikes });
 
             // Responder con el resultado actualizado
-            return res.status(201).json({ blogId, userId, likes: totalLikes });
+            return res.status(201).json({ blogId, userId, likes: totalLikes, likeSubcribe: newLike.userSubcribe });
         }
     } catch (error) {
         console.error(error);
