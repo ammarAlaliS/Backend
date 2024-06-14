@@ -25,7 +25,7 @@ const addComment = asyncHandler(async (req, res) => {
 
     const comment = new Comment({
         content: content.trim(),
-        author: userId, 
+        author: userId,
         blog: blog._id,
     });
 
@@ -34,7 +34,7 @@ const addComment = asyncHandler(async (req, res) => {
     blog.comments.push(comment._id);
     await blog.save();
 
-    const populatedComment = await Comment.findById(comment._id).populate('author', 'username email'); 
+    const populatedComment = await Comment.findById(comment._id).populate('author', 'username email');
 
     emitEvent('newComment', populatedComment);
 
@@ -65,15 +65,22 @@ const getCommentsByBlogId = asyncHandler(async (req, res) => {
     if (sortBy) {
         sortCriteria[sortBy] = order === 'desc' ? -1 : 1;
     } else {
-        sortCriteria.createdAt = -1; 
+        sortCriteria.createdAt = -1;
     }
 
     try {
         const comments = await Comment.find({ blog: blog._id })
-                                      .populate('author', 'username email profile_img_url')
-                                      .sort(sortCriteria)
-                                      .skip(skip)
-                                      .limit(limit);
+            .populate({
+                path: 'author',
+                select: {
+                    'global_user.first_name': 1,
+                    'global_user.last_name': 1,
+                    'global_user.profile_img_url': 1
+                }
+            })
+            .sort(sortCriteria)
+            .skip(skip)
+            .limit(limit);
 
         if (page) {
             emitEvent('commentsUpdated', { blogId, comments });
@@ -86,4 +93,4 @@ const getCommentsByBlogId = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { addComment , getCommentsByBlogId};
+module.exports = { addComment, getCommentsByBlogId };
