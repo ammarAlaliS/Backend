@@ -75,7 +75,7 @@ const getCommentsByBlogId = asyncHandler(async (req, res) => {
                                       .skip(skip)
                                       .limit(limit);
 
-        if (page === 1) {
+        if (page) {
             emitEvent('commentsUpdated', { blogId, comments });
         }
 
