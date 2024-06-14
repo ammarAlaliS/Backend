@@ -1,42 +1,89 @@
 const asyncHandler = require('express-async-handler');
+const mongoose = require('mongoose');
 const Blog = require('../models/Blog');
 const Comment = require('../models/CommentModel');
+const { emitEvent } = require('../socketLogic');
 
 // Controlador para agregar un comentario a un blog
 const addComment = asyncHandler(async (req, res) => {
-    try {
-        const { content } = req.body;
-        const { blogId } = req.params;
+    const { content } = req.body;
+    const { blogId } = req.params;
+    const userId = req.user._id;
 
-        // Buscar el blog al que se quiere agregar el comentario
-        const blog = await Blog.findById(blogId);
-        if (!blog) {
-            return res.status(404).json({ error: 'Blog not found' });
+
+    if (!mongoose.Types.ObjectId.isValid(blogId)) {
+        return res.status(400).json({ error: 'ID del blog inválido' });
+    }
+    if (!content || typeof content !== 'string' || content.trim().length < 3 || content.trim().length > 500) {
+        return res.status(400).json({ error: 'Contenido inválido. El contenido debe tener entre 3 y 500 caracteres.' });
+    }
+
+    const blog = await Blog.findById(blogId);
+    if (!blog) {
+        return res.status(404).json({ error: 'Blog no encontrado' });
+    }
+
+    const comment = new Comment({
+        content: content.trim(),
+        author: userId, 
+        blog: blog._id,
+    });
+
+    await comment.save();
+
+    blog.comments.push(comment._id);
+    await blog.save();
+
+    const populatedComment = await Comment.findById(comment._id).populate('author', 'username email'); 
+
+    emitEvent('newComment', populatedComment);
+
+    res.status(201).json(populatedComment);
+});
+
+
+
+const getCommentsByBlogId = asyncHandler(async (req, res) => {
+    const { blogId } = req.params;
+    let { page, limit, sortBy, order } = req.query;
+
+    page = parseInt(page, 10) || 1;
+    limit = parseInt(limit, 10) || 10;
+
+    if (!mongoose.Types.ObjectId.isValid(blogId)) {
+        return res.status(400).json({ error: 'ID del blog inválido' });
+    }
+
+    const blog = await Blog.findById(blogId);
+    if (!blog) {
+        return res.status(404).json({ error: 'Blog no encontrado' });
+    }
+
+    const skip = (page - 1) * limit;
+
+    const sortCriteria = {};
+    if (sortBy) {
+        sortCriteria[sortBy] = order === 'desc' ? -1 : 1;
+    } else {
+        sortCriteria.createdAt = -1; 
+    }
+
+    try {
+        const comments = await Comment.find({ blog: blog._id })
+                                      .populate('author', 'username email profile_img_url')
+                                      .sort(sortCriteria)
+                                      .skip(skip)
+                                      .limit(limit);
+
+        if (page === 1) {
+            emitEvent('commentsUpdated', { blogId, comments });
         }
 
-        // Crear el comentario
-        const comment = new Comment({
-            content,
-            author: req.user._id, // El ID del usuario que realiza la solicitud
-            blog: blog._id,
-        });
-
-        // Guardar el comentario en la base de datos
-        await comment.save();
-
-        // Agregar el comentario al blog
-        blog.comments.push(comment._id);
-        await blog.save();
-
-        // Volver a buscar el comentario y popular los datos del autor
-        const populatedComment = await Comment.findById(comment._id).populate('author');
-
-        res.status(201).json(populatedComment);
+        res.json(comments);
     } catch (error) {
-        // Manejar cualquier error capturado
-        console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error al obtener comentarios paginados:', error);
+        res.status(500).json({ error: 'Ocurrió un error interno al obtener comentarios paginados' });
     }
 });
 
-module.exports = { addComment };
+module.exports = { addComment , getCommentsByBlogId};

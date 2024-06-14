@@ -4,9 +4,9 @@ const { authMiddleware, isAdmin, checkAccountStatus, AccountStatus } = require('
 const { createTrip, joinTrip } = require('../controller/TripController');
 const { upload, createUser } = require('../controller/imageController');
 const { createBlog , upload_blog_img , getAllBlogs } = require('../controller/BlogController');
-const { addComment } = require('../controller/CommentController');
 const { getProducts, createProduct } = require('../controller/ProductsController');
 const { toggleLike , getBlogLikes, checkUserLike } =  require('../controller/LikesController')
+const { addComment , getCommentsByBlogId } = require('../controller/CommentController');
 
 const router = express.Router();
 
@@ -113,7 +113,10 @@ router.post('/create/products', authMiddleware, createProduct);
  *       400:
  *         description: Bad request
  */
-router.post('/blog/comment/:blogId/', authMiddleware, addComment);
+
+router.post('/blogs/:blogId/comments', authMiddleware, addComment);
+router.get('/blogs/:blogId/comments', getCommentsByBlogId);
+
 
 /**
  * @swagger
@@ -366,11 +369,10 @@ router.post('/subscribeToTrip/:tripId', authMiddleware, joinTrip);
 
 // Ruta para manejar los likes (toggle)
 router.post('/like/:blogId', authMiddleware, toggleLike);
-
-// Ruta para obtener los likes de un blog
 router.get('/blogs/:blogId/likes', getBlogLikes);
-
 router.get('/like/check/:blogId',authMiddleware, checkUserLike);
 
+
+router.post('/blogs/:blogId/comments', authMiddleware, addComment);
 
 module.exports = router;
