@@ -368,7 +368,7 @@ router.post('/subscribeToTrip/:tripId', authMiddleware, joinTrip);
 router.post('/like/:blogId', authMiddleware, toggleLike);
 
 // Ruta para obtener los likes de un blog
-router.get('/blogLikes/:blogId', getBlogLikes);
+router.get('/blogs/:blogId/likes', getBlogLikes);
 
 router.get('/like/check/:blogId',authMiddleware, checkUserLike);
 
