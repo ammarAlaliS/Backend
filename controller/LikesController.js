@@ -9,18 +9,16 @@ const toggleLike = async (req, res) => {
         const userId = req.user.id;
         const { blogId } = req.params;
 
+        // Buscar si ya existe un like del usuario en este blog
         const existingLike = await Like.findOne({ user: userId, blog: blogId });
 
         if (existingLike) {
-            // Si ya existe un like del usuario en este blog, se elimina
-            await Like.deleteOne({ _id: existingLike._id });
-
-            // Quitar el like del usuario
-            await User.findByIdAndUpdate(userId, { $pull: { likes: existingLike._id } });
+            // Si ya existe un like, actualizar userSubcribe a false
+            existingLike.userSubcribe = false;
+            await existingLike.save();
 
             // Actualizar el contador de likes en el blog
-            const totalLikes = await Like.countDocuments({ blog: blogId });
-            await Blog.findByIdAndUpdate(blogId, { $pull: { likes: existingLike._id } });
+            const totalLikes = await Like.countDocuments({ blog: blogId, userSubcribe: true });
 
             // Emitir evento a todos los clientes conectados
             emitEvent('likeUpdated', { blogId, likes: totalLikes });
@@ -28,19 +26,16 @@ const toggleLike = async (req, res) => {
             // Responder con el resultado actualizado
             return res.status(200).json({ blogId, userId, likes: totalLikes });
         } else {
-            // Si no existe, se agrega el like
+            // Si no existe, se agrega el like con userSubcribe en true
             const newLike = new Like({
                 user: userId,
                 blog: blogId,
+                userSubcribe: true,
             });
             await newLike.save();
 
-            // Agregar el like al usuario
-            await User.findByIdAndUpdate(userId, { $push: { likes: newLike._id } });
-
             // Actualizar el contador de likes en el blog
-            const totalLikes = await Like.countDocuments({ blog: blogId });
-            await Blog.findByIdAndUpdate(blogId, { $push: { likes: newLike._id } });
+            const totalLikes = await Like.countDocuments({ blog: blogId, userSubcribe: true });
 
             // Emitir evento a todos los clientes conectados
             emitEvent('likeUpdated', { blogId, likes: totalLikes });
@@ -53,6 +48,7 @@ const toggleLike = async (req, res) => {
         return res.status(500).json({ message: 'Error al manejar el like' });
     }
 };
+
 
 // Obtener todos los likes de un blog
 const getBlogLikes = async (req, res) => {
