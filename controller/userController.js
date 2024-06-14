@@ -105,14 +105,10 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    console.log('Email:', email); // Imprime el email recibido para depuración
-    console.log('Password:', password); // Imprime la contraseña recibida para depuración (solo en desarrollo)
 
     // Buscar al usuario por correo electrónico y asegurarse de que exista
     const findUser = await User.findOne({ 'global_user.email': email })
-    .populate('global_user.QuickCar')
-    .populate('Blog');
-    
+
     if (!findUser) {
       return res.status(401).json({ message: 'Usuario no encontrado' });
     }
@@ -141,22 +137,17 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
 
     // Enviar la respuesta al cliente con el token de acceso y la información del usuario
     res.json({
-      _id: findUser._id,
       first_name: findUser.global_user.first_name,
       last_name: findUser.global_user.last_name,
-      email: findUser.global_user.email,
-      role: findUser.global_user.role,
       profile_img_url: findUser.global_user.profile_img_url || null,
       token: generateToken(findUser._id),
-      QuickCar: findUser.global_user.QuickCar || null,
-      Blog: findUser.Blog || null
+
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error Interno del Servidor' });
   }
 });
-
 // ============================================================================================================================================================
 
 

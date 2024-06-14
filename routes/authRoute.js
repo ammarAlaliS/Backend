@@ -6,7 +6,7 @@ const { upload, createUser } = require('../controller/imageController');
 const { createBlog , upload_blog_img , getAllBlogs } = require('../controller/BlogController');
 const { addComment } = require('../controller/CommentController');
 const { getProducts, createProduct } = require('../controller/ProductsController');
-const { toggleLike , getBlogLikes } =  require('../controller/LikesController')
+const { toggleLike , getBlogLikes, checkUserLike } =  require('../controller/LikesController')
 
 const router = express.Router();
 
@@ -362,12 +362,15 @@ router.post("/create-trip", authMiddleware, createTrip);
  */
 router.post('/subscribeToTrip/:tripId', authMiddleware, joinTrip);
 
+
+
 // Ruta para manejar los likes (toggle)
 router.post('/like/:blogId', authMiddleware, toggleLike);
 
 // Ruta para obtener los likes de un blog
 router.get('/blogLikes/:blogId', getBlogLikes);
 
+router.get('/like/check/:blogId',authMiddleware, checkUserLike);
 
 
 module.exports = router;
