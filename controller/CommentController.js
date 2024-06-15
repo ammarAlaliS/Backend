@@ -34,7 +34,16 @@ const addComment = asyncHandler(async (req, res) => {
     blog.comments.push(comment._id);
     await blog.save();
 
-    const populatedComment = await Comment.findById(comment._id).populate('author', 'username email');
+    //const populatedComment = await Comment.findById(comment._id).populate('author', 'username email');
+    const populatedComment = await Comment.findById( comment._id )
+    .populate({
+        path: 'author',
+        select: {
+            'global_user.first_name': 1,
+            'global_user.last_name': 1,
+            'global_user.profile_img_url': 1
+        }
+    })
 
     emitEvent('newComment', populatedComment);
 
