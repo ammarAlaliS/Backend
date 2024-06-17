@@ -102,4 +102,16 @@ const getCommentsByBlogId = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { addComment, getCommentsByBlogId };
+
+const getBlogComment = async (req, res) => {
+    try {
+        const { blogId } = req.params;
+        const totalComment = await Comment.countDocuments({ blog: blogId });
+        return res.status(200).json({ blogId, totalComment });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Error al obtener los likes' });
+    }
+};
+
+module.exports = { addComment, getCommentsByBlogId, getBlogComment };

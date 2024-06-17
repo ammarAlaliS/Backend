@@ -6,7 +6,7 @@ const { upload, createUser } = require('../controller/imageController');
 const { createBlog , upload_blog_img , getAllBlogs } = require('../controller/BlogController');
 const { getProducts, createProduct } = require('../controller/ProductsController');
 const { toggleLike , getBlogLikes, checkUserLike } =  require('../controller/LikesController')
-const { addComment , getCommentsByBlogId } = require('../controller/CommentController');
+const { addComment , getCommentsByBlogId, getBlogComment } = require('../controller/CommentController');
 
 const router = express.Router();
 
@@ -116,6 +116,7 @@ router.post('/create/products', authMiddleware, createProduct);
 
 router.post('/blogs/:blogId/comments', authMiddleware, addComment);
 router.get('/blogs/:blogId/comments', getCommentsByBlogId);
+router.get('/blogs/:blogId/totalComment', getBlogComment);
 
 
 /**
