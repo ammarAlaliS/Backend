@@ -1,66 +1,154 @@
-const asyncHandler = require('express-async-handler');
-const Product = require('../models/ProductModel');
+const asyncHandler = require("express-async-handler");
+const Product = require("../models/ProductModel");
 
 // Obtener productos filtrados
 const getProducts = asyncHandler(async (req, res) => {
-    const { productType, minPrice, maxPrice, search } = req.query;
+  const {
+    productCategory,
+    minPrice,
+    maxPrice,
+    search,
+    minDate,
+    maxDate,
+    page = 1,
+    limit = 15,
+  } = req.query;
 
-    let filter = {};
+  let filter = {};
 
-    if (productType) {
-        filter.productType = productType;
-    }
+  if (productCategory) {
+    filter.productCategory = productCategory;
+  }
 
-    if (minPrice || maxPrice) {
-        filter.price = {};
-        if (minPrice) filter.price.$gte = minPrice;
-        if (maxPrice) filter.price.$lte = maxPrice;
-    }
+  if (minPrice || maxPrice) {
+    filter.price = {};
+    if (minPrice) filter.price.$gte = minPrice;
+    if (maxPrice) filter.price.$lte = maxPrice;
+  }
 
-    if (search) {
-        filter.$or = [
-            { productName: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } },
-        ];
-    }
+  if (search) {
+    filter.$or = [
+      { productName: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+      { productCategory: { $regex: search, $options: "i" } },
+      { productStatus: { $regex: search, $options: "i" } },
+    ];
+  }
 
-    const products = await Product.find(filter).populate('user');
+  if (minDate || maxDate) {
+    if (minDate) filter.createdAt.$gte = Date.parse(minDate.toString());
+    if (maxDate) filter.createdAt.$lte = Date.parse(minDate.toString());
+  }
+
+  const options = {
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10),
+    populate: "user",
+  };
+  try {
+    const products = await Product.paginate(filter, options);
     res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 // Crear un producto
 const createProduct = asyncHandler(async (req, res) => {
-    const { productName, productType, description, price, image } = req.body;
+  const {
+    productName,
+    productCategory,
+    productStatus,
+    productLocation,
+    description,
+    price,
+    image,
+    stock,
+  } = req.body;
+  // Obtener el ID de usuario del token decodificado
+  const userId = req.user.id;
 
-    // Obtener el ID de usuario del token decodificado
+  if (
+    !productName ||
+    !productCategory ||
+    !productStatus ||
+    !productLocation ||
+    !description ||
+    !price ||
+    !image ||
+    !stock
+  ) {
+    res
+      .status(400)
+      .json({ error: "Por favor, proporciona todos los campos requeridos" });
+  }
+
+  try {
+    // Crear el producto asociado con el usuario
+    const product = new Product({
+      productName,
+      productCategory,
+      productStatus,
+      productLocation,
+      description,
+      price,
+      image,
+      stock,
+      user: userId,
+    });
+
+    const createdProduct = await product.save();
+    res.status(201).json(createdProduct);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Error al crear el producto" + error.message });
+  }
+});
+
+const updateProduct = asyncHandler(async (req, res) => {
+  const {
+    id,
+    productName,
+    description,
+    price,
+    productCategory,
+    productStatus,
+    productLocation,
+    image,
+    stock,
+  } = req.body;
+
+  try {
+    const product = await Product.findById(id);
     const userId = req.user.id;
 
-    if (!productName || !productType || !price) {
-        res.status(400);
-        throw new Error('Por favor, proporciona todos los campos requeridos');
+    if (userId != product.user._id) {
+      res.status(400).json({ error: "No puedes actualizar este producto" });
     }
 
-    try {
-        // Crear el producto asociado con el usuario
-        const product = new Product({
-            productName,
-            productType,
-            productModel,
-            description,
-            price,
-            image,
-            user: userId
-        });
+    if (product) {
+      product.productName = productName || product.productName;
+      product.description = description || product.description;
+      product.price = price || product.price;
+      product.productCategory = productCategory || product.productCategory;
+      product.productStatus = productStatus || product.productStatus;
+      product.productLocation = productLocation || product.productLocation;
+      product.image = image || product.image;
+      product.stock = stock || product.stock;
 
-        const createdProduct = await product.save();
-        res.status(201).json(createdProduct);
-    } catch (error) {
-        res.status(500);
-        throw new Error('Error al crear el producto');
+      const updatedProduct = await product.save();
+      res.json(updatedProduct);
+    } else {
+      res.status(404).json({ error: "No se encotro el producto" });
     }
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
 });
 
 module.exports = {
-    getProducts,
-    createProduct
+  getProducts,
+  createProduct,
+  updateProduct,
 };

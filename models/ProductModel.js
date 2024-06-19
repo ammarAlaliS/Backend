@@ -1,39 +1,61 @@
+const { required } = require("joi");
+const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
-const { required } = require('joi');
-const mongoose = require('mongoose');
-
-const productSchema = new mongoose.Schema({
+const productSchema = new mongoose.Schema(
+  {
     productName: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
-    productType: {
-        type: String,
-        enum: ['Coche', 'Moto'],
-        required: true,
+    productCategory: {
+      type: String,
+      enum: ["Coche", "Moto", "Motocarro", "Articulos"],
+      required: true,
     },
-    productModel: {
+    productStatus: {
+      type: String,
+      required: true,
+    },
+    productLocation: {
+      state: {
         type: String,
         required: true,
+      },
+      latitude: {
+        type: Number,
+      },
+      longitude: {
+        type: Number,
+      },
     },
     description: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     price: {
-        type: Number,
-        required: true,
+      type: Number,
+      required: true,
     },
     image: {
-        type: String,
+      type: [String],
+      required: true,
+    },
+    stock: {
+      type: Number,
+      required: true,
     },
     user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-    }
-}, {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  {
     timestamps: true,
-});
+  }
+);
 
-module.exports = mongoose.model('Product', productSchema);
+productSchema.plugin(mongoosePaginate);
+
+module.exports = mongoose.model("Product", productSchema);

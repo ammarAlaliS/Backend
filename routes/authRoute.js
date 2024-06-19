@@ -1,17 +1,46 @@
-const express = require('express');
-const { createDriverUser, loginUserCtrl, getUsers, findUser, deleteUser, updateUser, blockUser, unBlockUser, handleRefreshToken, findDeletedAccounts } = require('../controller/userController');
-const { authMiddleware, isAdmin, checkAccountStatus, AccountStatus } = require('../middleawares/authMiddleWare');
-const { createTrip, joinTrip } = require('../controller/TripController');
-const { upload, createUser } = require('../controller/imageController');
-const { createBlog , upload_blog_img , getAllBlogs } = require('../controller/BlogController');
-const { getProducts, createProduct } = require('../controller/ProductsController');
-const { toggleLike , getBlogLikes, checkUserLike } =  require('../controller/LikesController')
-const { addComment , getCommentsByBlogId, getBlogComment } = require('../controller/CommentController');
+const express = require("express");
+const {
+  createDriverUser,
+  loginUserCtrl,
+  getUsers,
+  findUser,
+  deleteUser,
+  updateUser,
+  blockUser,
+  unBlockUser,
+  handleRefreshToken,
+  findDeletedAccounts,
+} = require("../controller/userController");
+const {
+  authMiddleware,
+  isAdmin,
+  checkAccountStatus,
+  AccountStatus,
+} = require("../middleawares/authMiddleWare");
+const { createTrip, joinTrip } = require("../controller/TripController");
+const { upload, createUser } = require("../controller/imageController");
+const {
+  createBlog,
+  upload_blog_img,
+  getAllBlogs,
+} = require("../controller/BlogController");
+const {
+  getProducts,
+  createProduct,
+  updateProduct,
+} = require("../controller/ProductsController");
+const {
+  toggleLike,
+  getBlogLikes,
+  checkUserLike,
+} = require("../controller/LikesController");
+const {
+  addComment,
+  getCommentsByBlogId,
+  getBlogComment,
+} = require("../controller/CommentController");
 
 const router = express.Router();
-
-
-
 
 /**
  * @swagger
@@ -34,8 +63,14 @@ const router = express.Router();
  *       400:
  *         description: Bad request
  */
-router.post('/create/blog', authMiddleware, isAdmin, upload_blog_img ,  createBlog);
-router.get('/blogs', getAllBlogs)
+router.post(
+  "/create/blog",
+  authMiddleware,
+  isAdmin,
+  upload_blog_img,
+  createBlog
+);
+router.get("/blogs", getAllBlogs);
 
 /**
  * @swagger
@@ -58,7 +93,7 @@ router.get('/blogs', getAllBlogs)
  *       400:
  *         description: Bad request
  */
-router.get('/get/products', authMiddleware, getProducts);
+router.get("/get/products", authMiddleware, getProducts);
 
 /**
  * @swagger
@@ -74,7 +109,23 @@ router.get('/get/products', authMiddleware, getProducts);
  *       400:
  *         description: Bad request
  */
-router.post('/create/products', authMiddleware, createProduct);
+router.post("/create/products", authMiddleware, createProduct);
+
+/**
+ * @swagger
+ * /api/ObbaraMarket/update/product:
+ *   post:
+ *     summary: Update a product
+ *     tags: [Producto]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Product updated successfully
+ *       400:
+ *         description: Bad request
+ */
+router.put("/update/product", authMiddleware, updateProduct);
 
 /**
  * @swagger
@@ -114,10 +165,9 @@ router.post('/create/products', authMiddleware, createProduct);
  *         description: Bad request
  */
 
-router.post('/blogs/:blogId/comments', authMiddleware, addComment);
-router.get('/blogs/:blogId/comments', getCommentsByBlogId);
-router.get('/blogs/:blogId/totalComment', getBlogComment);
-
+router.post("/blogs/:blogId/comments", authMiddleware, addComment);
+router.get("/blogs/:blogId/comments", getCommentsByBlogId);
+router.get("/blogs/:blogId/totalComment", getBlogComment);
 
 /**
  * @swagger
@@ -130,7 +180,7 @@ router.get('/blogs/:blogId/totalComment', getBlogComment);
  * /api/ObbaraMarket/register:
  *   post:
  *     summary: Registrar a un nuevo usuario
- *     tags: 
+ *     tags:
  *       - Usuarios
  *     description: Registrar un nuevo usuario con la información proporcionada.
  *     requestBody:
@@ -275,7 +325,7 @@ router.post("/register", upload, createUser);
  *         description: Solicitud incorrecta. Puede faltar información obligatoria o tener un formato incorrecto.
  *     security:
  *       - BearerAuth: []
- * 
+ *
  *   securityDefinitions:
  *     BearerAuth:
  *       type: apiKey
@@ -286,7 +336,6 @@ router.post("/register", upload, createUser);
 router.post("/login", loginUserCtrl);
 router.post("/driver/register", authMiddleware, createDriverUser);
 router.get("/user/:id", authMiddleware, findUser);
-
 
 /**
  * @swagger
@@ -326,7 +375,6 @@ router.get("/users", getUsers);
  *         description: User not found
  */
 
-
 /**
  * @swagger
  * /api/ObbaraMarket/create-trip:
@@ -364,16 +412,13 @@ router.post("/create-trip", authMiddleware, createTrip);
  *       400:
  *         description: Bad request
  */
-router.post('/subscribeToTrip/:tripId', authMiddleware, joinTrip);
-
-
+router.post("/subscribeToTrip/:tripId", authMiddleware, joinTrip);
 
 // Ruta para manejar los likes (toggle)
-router.post('/like/:blogId', authMiddleware, toggleLike);
-router.get('/blogs/:blogId/likes', getBlogLikes);
-router.get('/like/check/:blogId',authMiddleware, checkUserLike);
+router.post("/like/:blogId", authMiddleware, toggleLike);
+router.get("/blogs/:blogId/likes", getBlogLikes);
+router.get("/like/check/:blogId", authMiddleware, checkUserLike);
 
-
-router.post('/blogs/:blogId/comments', authMiddleware, addComment);
+router.post("/blogs/:blogId/comments", authMiddleware, addComment);
 
 module.exports = router;
