@@ -47,9 +47,9 @@ const getProducts = asyncHandler(async (req, res) => {
   };
   try {
     const products = await Product.paginate(filter, options);
-    res.json(products);
+    return res.json(products);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -78,7 +78,7 @@ const createProduct = asyncHandler(async (req, res) => {
     !image ||
     !stock
   ) {
-    res
+    return res
       .status(400)
       .json({ error: "Por favor, proporciona todos los campos requeridos" });
   }
@@ -98,9 +98,9 @@ const createProduct = asyncHandler(async (req, res) => {
     });
 
     const createdProduct = await product.save();
-    res.status(201).json(createdProduct);
+    return res.status(201).json(createdProduct);
   } catch (error) {
-    res
+    return res
       .status(500)
       .json({ error: "Error al crear el producto" + error.message });
   }
@@ -124,7 +124,9 @@ const updateProduct = asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     if (userId != product.user._id) {
-      res.status(400).json({ error: "No puedes actualizar este producto" });
+      return res
+        .status(400)
+        .json({ error: "No puedes actualizar este producto" });
     }
 
     if (product) {
@@ -138,12 +140,12 @@ const updateProduct = asyncHandler(async (req, res) => {
       product.stock = stock || product.stock;
 
       const updatedProduct = await product.save();
-      res.json(updatedProduct);
+      return res.json(updatedProduct);
     } else {
-      res.status(404).json({ error: "No se encotro el producto" });
+      return res.status(404).json({ error: "No se encotro el producto" });
     }
   } catch (error) {
-    res.status(500).json({ error: error });
+    return res.status(500).json({ error: error });
   }
 });
 
