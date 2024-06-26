@@ -46,9 +46,6 @@ const uploadImageToStorage = (file) => {
 // ===================================================================================================================================================
 
 // Función para crear un blog
-const Blog = require('../models/Blog');
-const asyncHandler = require('express-async-handler');
-const { uploadImageToStorage } = require('../services/imageStorage'); // Importa la función de subida de imágenes
 
 const createBlog = asyncHandler(async (req, res) => {
     try {
@@ -111,9 +108,6 @@ const createBlog = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = {
-    createBlog,
-};
 
 // ============================================================================================================================================
 
