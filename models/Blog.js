@@ -44,7 +44,7 @@ const blogSchema = new mongoose.Schema({
             minlength: [10, 'El contenido debe tener al menos 10 caracteres']
         },
         list: {
-            type: String,
+            type: [],
             minlength: [10, 'El contenido debe tener al menos 10 caracteres']
         }
     }],
