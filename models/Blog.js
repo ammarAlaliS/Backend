@@ -1,13 +1,13 @@
-const { types } = require('joi');
 const mongoose = require('mongoose');
 
+
+// Definición del esquema del blog
 const blogSchema = new mongoose.Schema({
     blog_image_url: {
-        type: String,
-        required: [true, 'La URL de la imagen del blog es requerida'],
+        type: [String],
         validate: {
-            validator: function(v) {
-                return /^(ftp|http|https):\/\/[^ "]+$/.test(v);
+            validator: function(arr) {
+                return arr.every(url => /^(ftp|http|https):\/\/[^ "]+$/.test(url));
             },
             message: props => `${props.value} no es una URL válida para la imagen del blog`
         }
@@ -43,7 +43,42 @@ const blogSchema = new mongoose.Schema({
         },
         list: {
             type: [String],
-        }
+        },
+        links: {
+            type: [{
+                title: {
+                    type: String,
+                    required: false,
+                    trim: true,
+                },
+                url: {
+                    type: String,
+                    required: false,
+                    validate: {
+                        validator: function(v) {
+                            return /^(ftp|http|https):\/\/[^ "]+$/.test(v) || v === '';
+                        },
+                        message: props => `${props.value} no es una URL válida para el enlace`
+                    }
+                }
+            }],
+            validate: {
+                validator: function(arr) {
+                    return arr.length === 0 || arr.every(link => !link.title || link.url);
+                },
+                message: 'Los enlaces deben tener título y URL válida'
+            }
+        },
+        blog_image_url: {
+            type: [String],
+            validate: {
+                validator: function(arr) {
+                    return arr.every(url => /^(ftp|http|https):\/\/[^ "]+$/.test(url));
+                },
+                message: props => `${props.value} no es una URL válida para la imagen del blog`
+            }
+        },
+        
     }],
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -59,9 +94,16 @@ const blogSchema = new mongoose.Schema({
         ref: 'Like'
     }]
 }, {
-    timestamps: true,
+    timestamps: true, // Agrega timestamps automáticos (createdAt, updatedAt)
 });
 
-blogSchema.index({ title: 'text', blog_description: 'text', 'sections.title': 'text', 'sections.content': 'text' });
+// Índices para búsqueda de texto en campos específicos
+blogSchema.index({
+    title: 'text',
+    blog_description: 'text',
+    'sections.title': 'text',
+    'sections.content': 'text'
+});
 
+// Exporta el modelo 'Blog' basado en el esquema definido
 module.exports = mongoose.model('Blog', blogSchema);

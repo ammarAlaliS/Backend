@@ -21,7 +21,7 @@ const { createTrip, joinTrip } = require("../controller/TripController");
 const { upload, createUser } = require("../controller/imageController");
 const {
   createBlog,
-  upload_blog_img,
+  uploadImageToStorage,
   getAllBlogs,
 } = require("../controller/BlogController");
 const {
@@ -67,7 +67,6 @@ router.post(
   "/create/blog",
   authMiddleware,
   isAdmin,
-  upload_blog_img,
   createBlog
 );
 router.get("/blogs", getAllBlogs);

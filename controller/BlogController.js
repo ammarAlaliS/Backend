@@ -2,112 +2,124 @@ const { Storage } = require('@google-cloud/storage');
 const multer = require('multer');
 const asyncHandler = require('express-async-handler');
 const Blog = require('../models/Blog');
-const User = require('../models/userModel');
-
-
-// ==================================================================================================================================================
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 // Configuración de Google Cloud Storage
 const storage = new Storage({
-  projectId: process.env.GCLOUD_PROJECT_ID,
-  credentials: {
-    private_key: process.env.GCLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    client_email: process.env.GCLOUD_CLIENT_EMAIL,
-  },
+    projectId: process.env.GCLOUD_PROJECT_ID,
+    credentials: {
+        private_key: process.env.GCLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        client_email: process.env.GCLOUD_CLIENT_EMAIL,
+    },
 });
 
-const bucketName = 'quickcar';
+const bucketName = 'quickcar'; // Reemplazar con tu bucket de Google Cloud Storage
 
-// Configuración de multer
+// Configuración de Multer para manejar la memoria
 const multerStorage = multer.memoryStorage();
-const upload_blog_img = multer({ storage: multerStorage }).single('blog_image_url');
+const upload = multer({
+    storage: multerStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // Limitar tamaño de archivo a 5MB
+});
 
-// ==================================================================================================================================================
-
-// Función para subir la imagen a Google Cloud Storage
-const uploadImageToStorage = (file) => {
-  return new Promise((resolve, reject) => {
-    const blob = storage.bucket(bucketName).file(Date.now() + "_" + file.originalname);
-    const blobStream = blob.createWriteStream({ resumable: false });
-
-    blobStream.on('error', (err) => {
-      reject(err);
-    });
-
-    blobStream.on('finish', () => {
-      const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
-      resolve(publicUrl);
-    });
-
-    blobStream.end(file.buffer);
-  });
-};
-
-// ===================================================================================================================================================
-
-// Función para crear un blog
-
-const createBlog = asyncHandler(async (req, res) => {
-    try {
-        const { title, tags, blog_description, sections } = req.body;
-
-        // Validar campos requeridos
-        if (!title || !blog_description || !sections || sections.length === 0) {
-            return res.status(400).json({ message: 'Title, blog description, and at least one section are required' });
-        }
-
-        // Procesar imagen del blog si está presente
-        let blogImageUrl;
-        if (req.file) {
-            // Subir la imagen a Google Cloud Storage (ejemplo, reemplaza con tu lógica de subida)
-            blogImageUrl = await uploadImageToStorage(req.file);
-        } else {
-            return res.status(400).json({ message: 'Blog image is required' });
-        }
-
-        // Convertir los tags de cadena separada por comas a array si es necesario
-        const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
-
-        // Crear las secciones del blog
-        const blogSections = sections.map(section => ({
-            title: section.title,
-            content: section.content,
-            list: section.list
-        }));
-
-        // Crear el nuevo blog con secciones
-        const newBlog = new Blog({
-            blog_image_url: blogImageUrl,
-            title,
-            blog_description,
-            sections: blogSections,
-            user: req.user._id, // Asignar el ID del usuario
-            tags: tagsArray,
+// Función para subir una imagen a Google Cloud Storage
+const uploadImageToStorage = async (file) => {
+    return new Promise((resolve, reject) => {
+        const blobName = `${uuidv4()}_${path.basename(file.originalname)}`;
+        const blob = storage.bucket(bucketName).file(blobName);
+        const blobStream = blob.createWriteStream({
+            metadata: {
+                contentType: file.mimetype,
+            },
+            resumable: false,
         });
 
-        // Guardar el blog en la base de datos
-        await newBlog.save();
+        blobStream.on('error', (err) => {
+            reject(err);
+        });
 
-        // Asociar el blog con el usuario
-        req.user.Blog.push(newBlog._id);
-        await req.user.save();
+        blobStream.on('finish', () => {
+            const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
+            resolve(publicUrl);
+        });
 
-        res.status(201).json(newBlog);
-    } catch (error) {
-        if (error.name === 'ValidationError') {
-            const validationErrors = {};
-            Object.keys(error.errors).forEach(key => {
-                validationErrors[key] = error.errors[key].message;
+        blobStream.end(file.buffer);
+    });
+};
+
+// Función para crear un blog
+const createBlog = async (req, res) => {
+    try {
+        // Procesar la carga de imágenes utilizando Multer
+        upload.array('blog_image_url', 5)(req, res, async (err) => {
+            if (err instanceof multer.MulterError) {
+                console.error('Multer error:', err);
+                return res.status(400).json({ message: 'Error uploading files', error: err.message });
+            } else if (err) {
+                console.error('Unknown error during file upload:', err);
+                return res.status(500).json({ message: 'Unknown error uploading files', error: err.message });
+            }
+
+            // Extraer datos del cuerpo de la solicitud
+            const { title, tags, blog_description, sections } = req.body;
+
+            // Validar campos requeridos
+            if (!title || !blog_description || !sections || sections.length === 0) {
+                return res.status(400).json({ message: 'Title, blog description, and at least one section are required' });
+            }
+
+            // Procesar las imágenes del blog
+            const blogImageUrls = [];
+            if (req.files && req.files.length > 0) {
+                // Subir cada imagen del blog a Google Cloud Storage
+                for (let file of req.files) {
+                    const imageUrl = await uploadImageToStorage(file);
+                    blogImageUrls.push(imageUrl);
+                }
+            } else {
+                return res.status(400).json({ message: 'Blog images are required' });
+            }
+
+            // Convertir los tags de cadena separada por comas a array si es necesario
+            const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
+
+            // Crear las secciones del blog
+            const blogSections = sections.map(section => ({
+                title: section.title || '',
+                content: section.content || [],
+                list: section.list || [],
+                links: section.links || [],
+                blog_image_url: section.blog_image_url || [], // Aquí puedes añadir lógica para manejar imágenes de sección si es necesario
+            }));
+
+            // Crear el nuevo blog en la base de datos
+            const newBlog = new Blog({
+                blog_image_url: blogImageUrls,
+                title,
+                blog_description,
+                sections: blogSections,
+                user: req.user._id, // Suponiendo que `req.user._id` contiene el ID del usuario actual
+                tags: tagsArray,
             });
-            return res.status(400).json({ message: 'Validation error', errors: validationErrors });
-        }
-        // Otros errores
+
+            // Guardar el blog en la base de datos
+            await newBlog.save();
+
+            // Asociar el blog con el usuario
+            req.user.Blog.push(newBlog._id);
+            await req.user.save();
+
+            // Enviar respuesta con el nuevo blog creado
+            res.status(201).json(newBlog);
+        });
+    } catch (error) {
         console.error('Error creating blog:', error);
-        res.status(500).json({ message: 'Internal server error', error });
+        res.status(500).json({ message: 'Internal server error', error: error.message });
     }
-});
+};
 
-
+  
 // ============================================================================================================================================
 
 
@@ -176,9 +188,8 @@ const deleteBlogById = asyncHandler(async (req, res) => {
 module.exports = {
     createBlog,
     getAllBlogs,
-    
     getBlogById,
     updateBlogById,
     deleteBlogById,
-    upload_blog_img
+    uploadImageToStorage
 };
