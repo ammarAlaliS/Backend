@@ -100,36 +100,35 @@ const createDriverUser = asyncHandler(async (req, res) => {
 
 
 // ===================================================================================================================================================================
-
 const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Buscar al usuario por su email
+    const findUser = await User.findOne({ 'global_user.email': email });
 
-    // Buscar al usuario por correo electrónico y asegurarse de que exista
-    const findUser = await User.findOne({ 'global_user.email': email })
-
+    // Verificar si el usuario existe
     if (!findUser) {
       return res.status(401).json({ message: 'Usuario no encontrado' });
     }
 
-    // Verificar la contraseña
+    // Verificar si la contraseña proporcionada coincide con la almacenada en la base de datos
     const isMatch = await findUser.isPasswordMatched(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Contraseña inválida' });
     }
 
-    // Generar un nuevo token de actualización
+    // Generar un nuevo refreshToken
     const refreshToken = await generateRefreshToken(findUser._id);
 
     // Actualizar el token de actualización en la base de datos
-    const updateUser = await User.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
       findUser._id,
       { 'global_user.refreshToken': refreshToken },
       { new: true }
     );
 
-    // Configurar la cookie de refreshToken
+    // Configurar la cookie de refreshToken en la respuesta
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       maxAge: 72 * 60 * 60 * 1000, // 72 horas de validez
@@ -141,13 +140,14 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
       last_name: findUser.global_user.last_name,
       profile_img_url: findUser.global_user.profile_img_url || null,
       token: generateToken(findUser._id),
-
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error Interno del Servidor' });
   }
 });
+
 // ============================================================================================================================================================
 
 
