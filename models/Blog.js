@@ -37,7 +37,7 @@ const blogSchema = new mongoose.Schema({
             type: String,
         },
         content: {
-            type: String,
+            type: [String],
             required: [true, 'El contenido de la sección es requerido'],
             minlength: [4, 'El contenido debe tener al menos 4 caracteres']
         },

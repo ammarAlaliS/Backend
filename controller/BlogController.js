@@ -95,7 +95,6 @@ const createBlog = asyncHandler(async (req, res) => {
         res.status(201).json(newBlog);
     } catch (error) {
         if (error.name === 'ValidationError') {
-            // Manejar errores de validación de Mongoose
             const validationErrors = {};
             Object.keys(error.errors).forEach(key => {
                 validationErrors[key] = error.errors[key].message;
