@@ -71,6 +71,7 @@ const createBlog = asyncHandler(async (req, res) => {
       const blogSections = sections.map(section => ({
         title: section.title,
         content: section.content,
+        list: section.list
       }));
   
       // Crear el nuevo blog con secciones
@@ -92,7 +93,6 @@ const createBlog = asyncHandler(async (req, res) => {
   
       res.status(201).json(newBlog);
     } catch (error) {
-      console.error("Error creating blog:", error);
       res.status(500).json({ message: 'Internal server error', error });
     }
   });

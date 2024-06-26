@@ -1,3 +1,4 @@
+const { types } = require('joi');
 const mongoose = require('mongoose');
 
 const blogSchema = new mongoose.Schema({
@@ -40,6 +41,10 @@ const blogSchema = new mongoose.Schema({
         content: {
             type: String,
             required: [true, 'El contenido de la sección es requerido'],
+            minlength: [10, 'El contenido debe tener al menos 10 caracteres']
+        },
+        list: {
+            type: String,
             minlength: [10, 'El contenido debe tener al menos 10 caracteres']
         }
     }],
