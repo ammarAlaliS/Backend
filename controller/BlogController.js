@@ -46,57 +46,74 @@ const uploadImageToStorage = (file) => {
 // ===================================================================================================================================================
 
 // Función para crear un blog
+const Blog = require('../models/Blog');
+const asyncHandler = require('express-async-handler');
+const { uploadImageToStorage } = require('../services/imageStorage'); // Importa la función de subida de imágenes
+
 const createBlog = asyncHandler(async (req, res) => {
     try {
-      const { title, tags, blog_description, sections } = req.body;
-  
-      // Validar campos requeridos
-      if (!title || !blog_description || !sections || sections.length === 0) {
-        return res.status(400).json({ message: 'Title, blog description, and at least one section are required' });
-      }
-  
-      // Procesar imagen del blog si está presente
-      let blogImageUrl;
-      if (req.file) {
-        // Subir la imagen a Google Cloud Storage
-        blogImageUrl = await uploadImageToStorage(req.file);
-      } else {
-        return res.status(400).json({ message: 'Blog image is required' });
-      }
-  
-      // Convertir los tags de cadena separada por comas a array si es necesario
-      const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
-  
-      // Crear las secciones del blog
-      const blogSections = sections.map(section => ({
-        title: section.title,
-        content: section.content,
-        list: section.list
-      }));
-  
-      // Crear el nuevo blog con secciones
-      const newBlog = new Blog({
-        blog_image_url: blogImageUrl,
-        title,
-        blog_description,
-        sections: blogSections,
-        user: req.user._id, // Asignar el ID del usuario
-        tags: tagsArray,
-      });
-  
-      // Guardar el blog en la base de datos
-      await newBlog.save();
-  
-      // Asociar el blog con el usuario
-      req.user.Blog.push(newBlog._id);
-      await req.user.save();
-  
-      res.status(201).json(newBlog);
-    } catch (error) {
-      res.status(500).json({ message: 'Internal server error', error });
-    }
-  });
+        const { title, tags, blog_description, sections } = req.body;
 
+        // Validar campos requeridos
+        if (!title || !blog_description || !sections || sections.length === 0) {
+            return res.status(400).json({ message: 'Title, blog description, and at least one section are required' });
+        }
+
+        // Procesar imagen del blog si está presente
+        let blogImageUrl;
+        if (req.file) {
+            // Subir la imagen a Google Cloud Storage (ejemplo, reemplaza con tu lógica de subida)
+            blogImageUrl = await uploadImageToStorage(req.file);
+        } else {
+            return res.status(400).json({ message: 'Blog image is required' });
+        }
+
+        // Convertir los tags de cadena separada por comas a array si es necesario
+        const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
+
+        // Crear las secciones del blog
+        const blogSections = sections.map(section => ({
+            title: section.title,
+            content: section.content,
+            list: section.list
+        }));
+
+        // Crear el nuevo blog con secciones
+        const newBlog = new Blog({
+            blog_image_url: blogImageUrl,
+            title,
+            blog_description,
+            sections: blogSections,
+            user: req.user._id, // Asignar el ID del usuario
+            tags: tagsArray,
+        });
+
+        // Guardar el blog en la base de datos
+        await newBlog.save();
+
+        // Asociar el blog con el usuario
+        req.user.Blog.push(newBlog._id);
+        await req.user.save();
+
+        res.status(201).json(newBlog);
+    } catch (error) {
+        if (error.name === 'ValidationError') {
+            // Manejar errores de validación de Mongoose
+            const validationErrors = {};
+            Object.keys(error.errors).forEach(key => {
+                validationErrors[key] = error.errors[key].message;
+            });
+            return res.status(400).json({ message: 'Validation error', errors: validationErrors });
+        }
+        // Otros errores
+        console.error('Error creating blog:', error);
+        res.status(500).json({ message: 'Internal server error', error });
+    }
+});
+
+module.exports = {
+    createBlog,
+};
 
 // ============================================================================================================================================
 
