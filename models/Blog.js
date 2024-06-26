@@ -34,7 +34,6 @@ const blogSchema = new mongoose.Schema({
     sections: [{
         title: {
             type: String,
-            required: [true, 'El título de la sección es requerido'],
             minlength: [5, 'El título debe tener al menos 5 caracteres'],
             maxlength: [100, 'El título no puede tener más de 100 caracteres']
         },

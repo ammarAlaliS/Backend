@@ -93,7 +93,7 @@ const createBlog = asyncHandler(async (req, res) => {
       res.status(201).json(newBlog);
     } catch (error) {
       console.error("Error creating blog:", error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Internal server error', error });
     }
   });
 
