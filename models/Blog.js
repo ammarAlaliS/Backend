@@ -35,8 +35,6 @@ const blogSchema = new mongoose.Schema({
     sections: [{
         title: {
             type: String,
-            minlength: [5, 'El título debe tener al menos 5 caracteres'],
-            maxlength: [100, 'El título no puede tener más de 100 caracteres']
         },
         content: {
             type: String,
@@ -45,7 +43,6 @@ const blogSchema = new mongoose.Schema({
         },
         list: {
             type: [],
-            minlength: [10, 'El contenido debe tener al menos 10 caracteres']
         }
     }],
     user: {
