@@ -69,15 +69,6 @@ const blogSchema = new mongoose.Schema({
                 message: 'Los enlaces deben tener título y URL válida'
             }
         },
-        blog_image_url: {
-            type: [String],
-            validate: {
-                validator: function(arr) {
-                    return arr.every(url => /^(ftp|http|https):\/\/[^ "]+$/.test(url));
-                },
-                message: props => `${props.value} no es una URL válida para la imagen del blog`
-            }
-        },
         
     }],
     user: {
