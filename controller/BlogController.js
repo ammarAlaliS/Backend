@@ -1,10 +1,13 @@
-const { Storage } = require('@google-cloud/storage');
-const multer = require('multer');
+
 const asyncHandler = require('express-async-handler');
 const Blog = require('../models/Blog');
-const path = require('path');
+const { Storage } = require('@google-cloud/storage');
+const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 
+
+
+// Configuración de Google Cloud Storage
 const storage = new Storage({
     projectId: process.env.GCLOUD_PROJECT_ID,
     credentials: {
@@ -41,6 +44,7 @@ const uploadImageToStorage = async (file) => {
 // Función para crear un blog
 const createBlog = async (req, res) => {
     try {
+             
         // Manejo de subida de imágenes con Multer
         upload(req, res, async (err) => {
             if (err) {
@@ -49,34 +53,24 @@ const createBlog = async (req, res) => {
             }
 
             try {
-                // Extracción de datos del cuerpo de la solicitud
-                const { title, tags, blog_description, sections } = req.body;
-
-                // Validación de campos obligatorios
-                if (!title || !blog_description || !sections || sections.length === 0) {
-                    return res.status(400).json({ message: 'Se requiere título, descripción del blog y al menos una sección.' });
-                }
-
                 // Subida de imágenes principales del blog
                 const blogImageUrls = await Promise.all(req.files['blog_image_url'].map(file => uploadImageToStorage(file)));
 
                 // Procesamiento de las secciones del blog
-                const processedSections = await Promise.all(sections.map(async (section) => {
-                    return {
-                        title: section.title,
-                        content: section.content,
-                        list: section.list,
-                        links: section.links
-                    };
+                const processedSections = req.body.sections.map(section => ({
+                    title: section.title || '',
+                    content: section.content,
+                    list: section.list || [],
+                    links: section.links || [],
                 }));
 
                 // Creación del objeto del blog
-                const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
+                const tagsArray = req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : [];
 
                 const newBlog = new Blog({
                     blog_image_url: blogImageUrls,
-                    title,
-                    blog_description,
+                    title: req.body.title,
+                    blog_description: req.body.blog_description,
                     sections: processedSections,
                     user: req.user._id,
                     tags: tagsArray,

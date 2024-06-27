@@ -7,7 +7,7 @@ const User = require('../models/userModel');
 const storage = new Storage({
   projectId: process.env.GCLOUD_PROJECT_ID,
   credentials: {
-    private_key: process.env.GCLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    private_key: process.env.GCLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'), 
     client_email: process.env.GCLOUD_CLIENT_EMAIL,
   },
 });
