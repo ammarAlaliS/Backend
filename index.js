@@ -6,27 +6,30 @@ const authRouter = require('./routes/authRoute');
 const bodyParser = require('body-parser');
 const { notFound, errorHandler } = require('./middleawares/errorHandle');
 const cookieParser = require('cookie-parser');
-const cors = require('cors');
-const setupSwaggerDocs = require('./swaggerDocs');
-const { initialize } = require('./socketLogic');
+const cors = require('cors'); 
+const setupSwaggerDocs = require('./swaggerDocs'); 
+const { initialize } = require('./socketLogic');  // Importar la función initialize
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Conexión a la base de datos
 dbConnection();
 
-// Configuración de CORS (permitir desde cualquier origen)
-app.use(cors());
+// Configuración de CORS
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: 'Content-Type, Authorization',
+    credentials: true
+}));
 
 // Middleware para analizar cuerpos de solicitud entrantes
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
-// Middleware para manejar cookies
 app.use(cookieParser());
 
-// Ruta para manejar la raíz del servidor
+// Ruta para manejar la raíz
 app.get('/', (req, res) => {
     res.send('¡Bienvenido a ObbaraMarket_Backend!');
 });
@@ -46,11 +49,15 @@ app.use(errorHandler);
 // Creación del servidor HTTP con Express
 const server = http.createServer(app);
 
+// Ajuste de timeouts
+server.keepAliveTimeout = 120000; // 2 minutos en milisegundos
+server.headersTimeout = 130000;   // 2 minutos y 10 segundos en milisegundos
+
 // Inicialización de socket.io
 initialize(server);
 
 // Inicio del servidor en el puerto especificado
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
