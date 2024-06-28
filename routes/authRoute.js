@@ -21,7 +21,7 @@ const { createTrip, joinTrip } = require("../controller/TripController");
 const { upload, createUser } = require("../controller/imageController");
 const {
   createBlog,
-  uploadImageToStorage,
+  handleFormData,
   getAllBlogs,
 } = require("../controller/BlogController");
 const {
@@ -63,12 +63,8 @@ const router = express.Router();
  *       400:
  *         description: Bad request
  */
-router.post(
-  "/create/blog",
-  authMiddleware,
-  isAdmin,
-  createBlog
-);
+router.post("/create/blog", authMiddleware, isAdmin, handleFormData, createBlog);
+
 router.get("/blogs", getAllBlogs);
 
 /**

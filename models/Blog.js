@@ -1,17 +1,18 @@
 const mongoose = require('mongoose');
 
-
 // Definición del esquema del blog
 const blogSchema = new mongoose.Schema({
-    blog_image_url: {
-        type: [String],
-        validate: {
-            validator: function(arr) {
-                return arr.every(url => /^(ftp|http|https):\/\/[^ "]+$/.test(url));
-            },
-            message: props => `${props.value} no es una URL válida para la imagen del blog`
-        }
-    },
+    blog_image_url: [{
+        url: {
+            type: String,
+            required: true,
+        },
+        alt: {
+            type: String,
+            required: false, 
+            trim: true,
+        },
+    }],
     title: {
         type: String,
         required: [true, 'El título del blog es requerido'],
@@ -56,7 +57,7 @@ const blogSchema = new mongoose.Schema({
                     required: false,
                     validate: {
                         validator: function(v) {
-                            return /^(ftp|http|https):\/\/[^ "]+$/.test(v) || v === '';
+                            return v === '' || /^(ftp|http|https):\/\/[^ "]+$/.test(v);
                         },
                         message: props => `${props.value} no es una URL válida para el enlace`
                     }
@@ -64,7 +65,7 @@ const blogSchema = new mongoose.Schema({
             }],
             validate: {
                 validator: function(arr) {
-                    return arr.length === 0 || arr.every(link => !link.title || link.url);
+                    return arr.every(link => (!link.title && !link.url) || (link.title && link.url));
                 },
                 message: 'Los enlaces deben tener título y URL válida'
             }
@@ -85,10 +86,9 @@ const blogSchema = new mongoose.Schema({
         ref: 'Like'
     }]
 }, {
-    timestamps: true, // Agrega timestamps automáticos (createdAt, updatedAt)
+    timestamps: true,
 });
 
-// Índices para búsqueda de texto en campos específicos
 blogSchema.index({
     title: 'text',
     blog_description: 'text',
@@ -96,5 +96,4 @@ blogSchema.index({
     'sections.content': 'text'
 });
 
-// Exporta el modelo 'Blog' basado en el esquema definido
 module.exports = mongoose.model('Blog', blogSchema);
