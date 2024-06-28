@@ -24,7 +24,7 @@ const memoryStorage = multer.memoryStorage();
 const upload = multer({ storage: memoryStorage });
 
 // Función para subir una imagen a Google Cloud Storage
-const uploadImageToStorage = async (file) => {
+const uploadImageToStorage = async (file, altText) => {
     const blob = storage.bucket(bucketName).file(uuidv4() + "_" + file.originalname);
     const blobStream = blob.createWriteStream({ resumable: false });
 
@@ -35,7 +35,7 @@ const uploadImageToStorage = async (file) => {
 
         blobStream.on('finish', () => {
             const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
-            resolve(publicUrl);
+            resolve({ url: publicUrl, alt: altText });
             console.log(`Imagen subida: ${publicUrl}`);
         });
 
@@ -46,7 +46,7 @@ const uploadImageToStorage = async (file) => {
 // Middleware para manejar las imágenes y los datos del formulario
 const handleFormData = (req, res, next) => {
     upload.fields([
-        { name: 'blog_image_url', maxCount: 5 },
+        { name: 'blog_image_url', maxCount: 5 }, 
     ])(req, res, err => {
         if (err instanceof multer.MulterError) {
             return res.status(400).json({ message: 'Error uploading images', error: err });
@@ -63,7 +63,7 @@ const processImages = async (files) => {
     if (files && files.length > 0) {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const imageUrl = await uploadImageToStorage(file);
+            const imageUrl = await uploadImageToStorage(file, file.originalname);
             console.log(`URL de imagen subida: ${imageUrl}`);
             imageUrls.push(imageUrl);
         }
@@ -72,7 +72,7 @@ const processImages = async (files) => {
 };
 
 // Controlador para crear un nuevo blog
-const createBlog = asyncHandler(async (req, res) => {
+const createBlog = async (req, res) => {
     const { title, tags, blog_description, sections } = req.body;
 
     // Validar campos requeridos
@@ -81,26 +81,21 @@ const createBlog = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Procesar imágenes del blog
+        // Procesar imágenes del blog principal
         const blogImageUrls = await processImages(req.files['blog_image_url']);
 
         // Procesar las secciones del blog
-        const processedSections = [];
-        for (let i = 0; i < sections.length; i++) {
-            const section = sections[i];
-            processedSections.push({
-                title: section.title || '',
-                content: section.content || [],
-                list: section.list || [],
-                links: section.links || [],
-         
-            });
-        }
+        const processedSections = sections.map(section => ({
+            title: section.title || '',
+            content: section.content || [],
+            list: section.list || [],
+            links: section.links || [],
+        }));
 
         // Convertir los tags de cadena separada por comas a array si es necesario
         const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
 
-        // Crear el nuevo blog con secciones
+        // Crear el nuevo blog con secciones y URLs de imagen
         const newBlog = new Blog({
             blog_image_url: blogImageUrls,
             title,
@@ -129,7 +124,8 @@ const createBlog = asyncHandler(async (req, res) => {
         console.error('Error creating blog:', error);
         res.status(500).json({ message: 'Internal server error', error });
     }
-});
+};
+
 
 
 // ============================================================================================================================================
