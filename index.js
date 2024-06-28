@@ -16,15 +16,8 @@ const PORT = process.env.PORT || 5000;
 // Conexión a la base de datos
 dbConnection();
 
-// Configuración de CORS para permitir solicitudes desde el origen específico
-const corsOptions = {
-    origin: 'https://obbaramarket-dashbord.netlify.app',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true // Habilita el intercambio de cookies a través de las solicitudes CORS
-};
-
-app.use(cors(corsOptions));
+// Configuración de CORS (permitir desde cualquier origen)
+app.use(cors());
 
 // Middleware para analizar cuerpos de solicitud entrantes
 app.use(bodyParser.urlencoded({ extended: true }));
