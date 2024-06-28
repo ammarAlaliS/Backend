@@ -11,3 +11,19 @@ Además, he configurado transacciones de base de datos para garantizar la consis
 Finalmente, mi controlador de errores está diseñado para manejar excepciones y errores de manera coherente en toda la aplicación. Esto no solo ayuda a mantener la estabilidad de la aplicación, sino que también protege la confidencialidad de la información sensible al evitar la divulgación de detalles internos al cliente.
 
 Quedo a disposición para discutir cualquier aspecto relacionado con la seguridad de nuestra API o para recibir sugerencias sobre posibles mejoras. Su retroalimentación es invaluable para mí.
+
+
+
+const processSectionImagess = async (req) => {
+    let sectionImageUrls = [];
+        if (req.files['section_image_url'] && req.files['section_image_url'].length > 0) {
+            for (let i = 0; i < req.files['section_image_url'].length; i++) {
+                const file = req.files['section_image_url'][i];
+                const imageUrl = await uploadImageToStorage(file);
+                console.log('URL de imagen de la secion:', imageUrl); 
+                sectionImageUrls.push(imageUrl);
+            }}
+        
+        console.log('URL de imagen de sección:', sectionImageUrls);
+        return sectionImageUrls;
+};

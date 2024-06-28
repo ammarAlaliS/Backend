@@ -21,12 +21,6 @@ const blogSchema = new mongoose.Schema({
     },
     tags: {
         type: [String],
-        validate: {
-            validator: function(arr) {
-                return arr.every(tag => typeof tag === 'string' && tag.trim().length > 0);
-            },
-            message: props => `Los tags deben ser cadenas no vacías`
-        }
     },
     blog_description: {
         type: String,
