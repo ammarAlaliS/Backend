@@ -45,6 +45,16 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    salesStatus: {
+      type: String,
+      enum: ["Vendido", "Disponible"],
+      required: true,
+    },
+    productRegistrationStatus: {
+      type: String,
+      enum: ["Publico", "Eliminado"],
+      required: true,
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -1,5 +1,9 @@
 const asyncHandler = require("express-async-handler");
 const Product = require("../models/ProductModel");
+const {
+  processImages,
+  deleteImageFromStorage,
+} = require("../controller/StorageController");
 
 // Obtener productos filtrados
 const getProducts = asyncHandler(async (req, res) => {
@@ -14,7 +18,10 @@ const getProducts = asyncHandler(async (req, res) => {
     limit = 15,
   } = req.query;
 
-  let filter = {};
+  let filter = {
+    salesStatus: "Disponible",
+    productRegistrationStatus: "Publico",
+  };
 
   if (productCategory) {
     filter.productCategory = productCategory;
@@ -36,8 +43,16 @@ const getProducts = asyncHandler(async (req, res) => {
   }
 
   if (minDate || maxDate) {
-    if (minDate) filter.createdAt.$gte = Date.parse(minDate.toString());
-    if (maxDate) filter.createdAt.$lte = Date.parse(minDate.toString());
+    if (minDate) {
+      filter.createdAt = {};
+      filter.createdAt.$gte = minDate;
+    }
+    if (maxDate) {
+      if (filter.createdAt == undefined || filter.createdAt == null) {
+        filter.createdAt = {};
+      }
+      filter.createdAt.$lte = maxDate;
+    }
   }
 
   const options = {
@@ -62,9 +77,10 @@ const createProduct = asyncHandler(async (req, res) => {
     productLocation,
     description,
     price,
-    image,
     stock,
-  } = req.body;
+    salesStatus,
+    productRegistrationStatus,
+  } = JSON.parse(req.body.body);
   // Obtener el ID de usuario del token decodificado
   const userId = req.user.id;
 
@@ -75,8 +91,9 @@ const createProduct = asyncHandler(async (req, res) => {
     !productLocation ||
     !description ||
     !price ||
-    !image ||
-    !stock
+    !stock ||
+    !salesStatus ||
+    !productRegistrationStatus
   ) {
     return res
       .status(400)
@@ -85,6 +102,12 @@ const createProduct = asyncHandler(async (req, res) => {
 
   try {
     // Crear el producto asociado con el usuario
+    const blogImageUrls = await processImages(req.files["product_image_url"]);
+
+    let urls = blogImageUrls.map((item) => {
+      return item.url;
+    });
+
     const product = new Product({
       productName,
       productCategory,
@@ -92,8 +115,10 @@ const createProduct = asyncHandler(async (req, res) => {
       productLocation,
       description,
       price,
-      image,
+      image: urls,
       stock,
+      salesStatus,
+      productRegistrationStatus,
       user: userId,
     });
 
@@ -117,7 +142,9 @@ const updateProduct = asyncHandler(async (req, res) => {
     productLocation,
     image,
     stock,
-  } = req.body;
+    salesStatus,
+    productRegistrationStatus,
+  } = JSON.parse(req.body.body);
 
   try {
     const product = await Product.findById(id);
@@ -129,6 +156,34 @@ const updateProduct = asyncHandler(async (req, res) => {
         .json({ error: "No puedes actualizar este producto" });
     }
 
+    const blogImageUrls = await processImages(req.files["product_image_url"]);
+
+    if (image != null && image != undefined && image.length > 0) {
+      blogImageUrls.map((item) => {
+        image.push(item.url);
+      });
+    } else {
+      image = blogImageUrls.map((item) => {
+        return item.url;
+      });
+    }
+
+    for (let i = 0; i < product.image.length; i++) {
+      if (
+        image == null ||
+        image == undefined ||
+        image.length == 0 ||
+        image.indexOf(product.image[i]) < 0
+      ) {
+        await deleteImageFromStorage(
+          product.image[i].replace(
+            "https://storage.googleapis.com/quickcar/",
+            ""
+          )
+        );
+      }
+    }
+
     if (product) {
       product.productName = productName || product.productName;
       product.description = description || product.description;
@@ -138,6 +193,9 @@ const updateProduct = asyncHandler(async (req, res) => {
       product.productLocation = productLocation || product.productLocation;
       product.image = image || product.image;
       product.stock = stock || product.stock;
+      product.salesStatus = salesStatus || product.salesStatus;
+      product.productRegistrationStatus =
+        productRegistrationStatus || product.productRegistrationStatus;
 
       const updatedProduct = await product.save();
       return res.json(updatedProduct);
