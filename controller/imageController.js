@@ -12,7 +12,7 @@ const storage = new Storage({
   },
 });
 
-const bucketName = 'quickcar';
+const bucketName = 'quickcar-storage';
 
 // Configuración de multer
 const multerStorage = multer.memoryStorage();
