@@ -40,6 +40,8 @@ const {
   getBlogComment,
 } = require("../controller/CommentController");
 
+const { handleProductFormData } = require("../controller/StorageController");
+
 const router = express.Router();
 
 /**
@@ -63,7 +65,13 @@ const router = express.Router();
  *       400:
  *         description: Bad request
  */
-router.post("/create/blog", authMiddleware, isAdmin, handleFormData, createBlog);
+router.post(
+  "/create/blog",
+  authMiddleware,
+  isAdmin,
+  handleFormData,
+  createBlog
+);
 
 router.get("/blogs", getAllBlogs);
 
@@ -104,7 +112,12 @@ router.get("/get/products", authMiddleware, getProducts);
  *       400:
  *         description: Bad request
  */
-router.post("/create/products", authMiddleware, createProduct);
+router.post(
+  "/create/product",
+  authMiddleware,
+  handleProductFormData,
+  createProduct
+);
 
 /**
  * @swagger
@@ -120,7 +133,12 @@ router.post("/create/products", authMiddleware, createProduct);
  *       400:
  *         description: Bad request
  */
-router.put("/update/product", authMiddleware, updateProduct);
+router.put(
+  "/update/product",
+  authMiddleware,
+  handleProductFormData,
+  updateProduct
+);
 
 /**
  * @swagger
