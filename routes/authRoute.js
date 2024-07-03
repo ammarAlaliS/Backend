@@ -23,6 +23,7 @@ const {
   createBlog,
   handleFormData,
   getAllBlogs,
+  deleteBlogById
 } = require("../controller/BlogController");
 const {
   getProducts,
@@ -73,7 +74,17 @@ router.post(
   createBlog
 );
 
-router.get("/blogs", getAllBlogs);
+router.delete(
+  "/delete/blog/:blogId", 
+  authMiddleware, 
+  isAdmin, 
+  deleteBlogById
+);
+
+router.get(
+  "/blogs", 
+  getAllBlogs
+);
 
 /**
  * @swagger

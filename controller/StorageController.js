@@ -13,7 +13,7 @@ const storage = new Storage({
   },
 });
 
-const bucketName = "quickcar"; // Nombre de tu bucket en Google Cloud Storage
+const bucketName = "quickcar-storage"; // Nombre de tu bucket en Google Cloud Storage
 
 // Configurar el almacenamiento en memoria para Multer
 const memoryStorage = multer.memoryStorage();

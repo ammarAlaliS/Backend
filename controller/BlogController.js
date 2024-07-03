@@ -4,6 +4,7 @@ const Blog = require('../models/Blog');
 const { Storage } = require('@google-cloud/storage');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
+const deleteImageFromStorage = require("./StorageController.js")
 
 //==================================================================================================================================
 // Configuración de Google Cloud Storage
@@ -181,15 +182,33 @@ const updateBlogById = asyncHandler(async (req, res) => {
 // Controlador para eliminar un blog por su ID
 const deleteBlogById = asyncHandler(async (req, res) => {
     const blogId = req.params.id;
-
-    const deletedBlog = await Blog.findByIdAndDelete(blogId);
-
-    if (!deletedBlog) {
-        return res.status(404).json({ error: 'Blog not found' });
+    
+    try {
+        const findBlogById = await Blog.findById(blogId);
+        
+        if (!findBlogById) {
+            return res.status(404).json({ error: 'Blog not found' });
+        }
+        
+        // Verificar si findBlogById.blog_image_url es válido antes de intentar eliminar la imagen
+        if (findBlogById.blog_image_url && findBlogById.blog_image_url.length > 0) {
+            const file = findBlogById.blog_image_url[0].url; // Obtener la URL de la primera imagen (asumiendo que es un solo objeto en el arreglo)
+            await deleteImageFromStorage(file);
+        }
+        
+        const deletedBlog = await Blog.findByIdAndDelete(blogId);
+        
+        if (!deletedBlog) {
+            return res.status(404).json({ error: 'Blog not found' });
+        }
+        
+        res.status(200).json({ message: 'Blog deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
     }
-
-    res.status(200).json({ message: 'Blog deleted successfully' });
 });
+
 
 module.exports = {
     createBlog,
