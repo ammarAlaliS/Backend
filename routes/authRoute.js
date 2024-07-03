@@ -75,11 +75,12 @@ router.post(
 );
 
 router.delete(
-  "/delete/blog/:blogId", 
+  "/delete/blog/:blogId",
   authMiddleware, 
   isAdmin, 
   deleteBlogById
 );
+
 
 router.get(
   "/blogs", 
