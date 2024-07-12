@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const quickCarSchema = new mongoose.Schema({
+    driverIsActiveState: {
+        type: Boolean,
+        default: false
+    },
     vehicleType: {
         type: String,
         enum: ['Coche', 'Moto'],
@@ -11,44 +15,64 @@ const quickCarSchema = new mongoose.Schema({
         required: [true, 'Vehicle model is required'],
         trim: true,
     },
-    startLocation: {
+    vehicleModelImage: [{
+        url: {
+            type: String,
+            required: true,
+        },
+        alt: {
+            type: String,
+            required: false,
+            trim: true,
+        },
+    }],
+    drivingLicense: {
         type: String,
-        required: [true, 'Start location is required'],
         trim: true,
     },
-    endLocation: {
-        type: String,
-        required: [true, 'End location is required'],
-        trim: true,
-    },
-    startTime: {
-        hour: {
-            type: Number,
-            min: 0,
-            max: 23,
-            required: [true, 'Start time hour is required'],
+    drivingLicenseImage: [{
+        url: {
+            type: String,
+            required: true,
         },
-        minute: {
-            type: Number,
-            min: 0,
-            max: 59,
-            required: [true, 'Start time minute is required'],
+        alt: {
+            type: String,
+            required: false,
+            trim: true,
         },
-    },
-    endTime: {
-        hour: {
-            type: Number,
-            min: 0,
-            max: 23,
-            required: [true, 'End time hour is required'],
-        },
-        minute: {
-            type: Number,
-            min: 0,
-            max: 59,
-            required: [true, 'End time minute is required'],
-        },
-    },
+    }],
+    startTime: [
+        {
+            hour: {
+                type: Number,
+                min: 0,
+                max: 23,
+                required: [true, 'Start time hour is required'],
+            },
+            minute: {
+                type: Number,
+                min: 0,
+                max: 59,
+                required: [true, 'Start time minute is required'],
+            },
+        }
+    ],
+    endTime: [
+        {
+            hour: {
+                type: Number,
+                min: 0,
+                max: 23,
+                required: [true, 'End time hour is required'],
+            },
+            minute: {
+                type: Number,
+                min: 0,
+                max: 59,
+                required: [true, 'End time minute is required'],
+            },
+        }
+    ],
     regularDays: {
         type: [String],
         enum: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
@@ -63,30 +87,37 @@ const quickCarSchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Price per seat is required'],
     },
-    image: {
-        type: String,
-        trim: true,
-        validate: {
-            validator: (v) => {
-                const regex = /^https?:\/\/.+\.(jpg|jpeg|png|gif)$/i;
-                return regex.test(v);
-            },
-            message: (props) => `${props.value} is not a valid image URL`,
-        },
-    },
-    drivingLicense: {
-        type: String,
-        trim: true,
-    },
-    fare: {
+    TripFare: {
         type: Number,
         required: [true, 'Fare is required'],
     },
-    trips: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'TripMade',
-        required: false,
+    PricePerKilometer: {
+        type: Number,
+        required: [true, 'Fare is required'],
     },
+    starLocation: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StartLocation',
+        required: true
+    },
+    endLocation: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'EndLocation',
+        required: true
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true,
+    },
+    QuickCarLocation: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'QuickCarLocation',
+        required: false,
+        index: true,
+    },
+
 }, {
     timestamps: true,
 });

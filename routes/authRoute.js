@@ -42,8 +42,21 @@ const {
 } = require("../controller/CommentController");
 
 const { handleProductFormData } = require("../controller/StorageController");
+const { 
+  createQuickCar, 
+  handleDriverFormData,
+  getAllQuickCars,
+  getQuickCarById,
+  updateQuickCar,
+  deleteQuickCar, } = require('../controller/DriverLogic/DriverController');
 
 const router = express.Router();
+
+router.post('/driver/register', authMiddleware, handleDriverFormData, createQuickCar);
+router.get('/drivers', getAllQuickCars);
+router.get('/driver/:id', getQuickCarById);
+router.put('/driver/:id', handleDriverFormData, updateQuickCar);
+router.delete('/driver/:id', deleteQuickCar);
 
 /**
  * @swagger
@@ -359,7 +372,6 @@ router.post("/register", upload, createUser);
  */
 
 router.post("/login", loginUserCtrl);
-router.post("/driver/register", authMiddleware, createDriverUser);
 router.get("/user/:id", authMiddleware, findUser);
 
 /**
@@ -443,7 +455,6 @@ router.post("/subscribeToTrip/:tripId", authMiddleware, joinTrip);
 router.post("/like/:blogId", authMiddleware, toggleLike);
 router.get("/blogs/:blogId/likes", getBlogLikes);
 router.get("/like/check/:blogId", authMiddleware, checkUserLike);
-
 router.post("/blogs/:blogId/comments", authMiddleware, addComment);
 
 module.exports = router;

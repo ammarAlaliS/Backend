@@ -3,6 +3,7 @@ const Blog = require("../models/Blog");
 const { Storage } = require("@google-cloud/storage");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
+const fs = require("fs");
 
 // Configuración de Google Cloud Storage
 const storage = new Storage({
@@ -36,7 +37,8 @@ const uploadImageToStorage = async (file, altText) => {
       resolve({ url: publicUrl, alt: altText });
       console.log(`Imagen subida: ${publicUrl}`);
     });
-
+    fs.unlinkSync(file.path); 
+    console.log(`Archivo local eliminado: ${file.path}`);
     blobStream.end(file.buffer);
   });
 };

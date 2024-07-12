@@ -38,13 +38,8 @@ const userSchema = new mongoose.Schema({
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
+      enum: ['user', 'admin', 'passenger', 'driver'],
       default: 'user',
-    },
-    QuickCar: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'QuickCar',
-      required: false,
     },
   },
   Blog: [{
