@@ -1,45 +1,45 @@
-
 const mongoose = require('mongoose');
 
 const tripMadeSchema = new mongoose.Schema({
-    status: { type: String, 
-        required: true, 
-        enum: ['Requested', 'Rejected', 'Accepted', 'Paid', 'Processing', 'Completed'] 
-    },
-     paymentType : {
+    status: {
         type: String,
-        required: [true, 'Start location is required'],
-        trim: true,
-     },
+        required: true,
+        enum: ['pending', 'Created', 'ongoing', 'completed', 'canceled'],
+    },
+    paymentType: {
+        type: String,
+        required: true,
+        enum: ['cash', 'card', 'online'],
+    },
     numberOfSeatsRequested: {
         type: Number,
-        min: 0,
-        max: 3,
-        required: [true, 'number of seats requested is required'],
-    }, 
+        required: true,
+    },
     totalRate: {
         type: Number,
-        required: true
+        required: true,
     },
-    starLocation: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'StartLocation', 
-        required: true 
+    startLocation: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StartLocation',
+        required: true,
     },
-     endLocation: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'EndLocation', 
-        required: true 
+    endLocation: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'EndLocation',
+        required: true,
     },
     driverUser: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Quickcar',
+        ref: 'User',
+        required: true,
     },
-    passengerUser: {
+    passengerUsers: [{ 
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
+        ref: 'User',
+    }],
 }, {
     timestamps: true,
 });
+
 module.exports = mongoose.model('TripMade', tripMadeSchema);

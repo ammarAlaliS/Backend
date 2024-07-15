@@ -1,84 +1,84 @@
 const asyncHandler = require("express-async-handler");
 const QuickCar = require("../../models/quickCarModel");
 const StartLocation = require("../../models/StartLocation");
+const CurrentQuickCarLocation = require("../../models/QuickcarLocationModel");
 const EndLocation = require("../../models/EndLocation");
+const { deleteImageFromStorage } = require("../StorageController");
 const mongoose = require("mongoose");
 const multer = require("multer");
-const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
-const {
-  uploadImageToStorage,
-  deleteImageFromStorage,
-} = require("../StorageController");
+const { Storage } = require("@google-cloud/storage");
+const { format } = require("util");
 
-const uploadDirectory = "./uploads";
-
-if (!fs.existsSync(uploadDirectory)) {
-  fs.mkdirSync(uploadDirectory);
-}
-const multerStorage = multer.diskStorage({
-  destination: (req, file, callback) => {
-    callback(null, uploadDirectory);
-  },
-  filename: (req, file, callback) => {
-    const fileName = uuidv4() + "_" + file.originalname;
-    callback(null, fileName);
+const storage = new Storage({
+  projectId: process.env.GCLOUD_PROJECT_ID,
+  credentials: {
+    private_key: process.env.GCLOUD_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    client_email: process.env.GCLOUD_CLIENT_EMAIL,
   },
 });
-const upload = multer({ storage: multerStorage });
+const bucketName = "quickcar-storage";
+
+const memoryStorage = multer.memoryStorage();
+const upload = multer({ storage: memoryStorage });
+
+const uploadImageToStorage = async (file, altText) => {
+  const blob = storage
+    .bucket(bucketName)
+    .file(uuidv4() + "_" + file.originalname);
+  const blobStream = blob.createWriteStream({ resumable: false });
+
+  return new Promise((resolve, reject) => {
+    blobStream.on("error", (err) => {
+      reject(err);
+    });
+
+    blobStream.on("finish", () => {
+      const publicUrl = format(
+        `https://storage.googleapis.com/${bucketName}/${blob.name}`
+      );
+      resolve({ url: publicUrl, alt: altText });
+      console.log(`Imagen subida: ${publicUrl}`);
+    });
+
+    blobStream.end(file.buffer);
+  });
+};
 
 const handleDriverFormData = upload.fields([
-  { name: "vehicleModelImage", maxCount: 1 },
-  { name: "drivingLicenseImage", maxCount: 1 },
+  { name: "vehicleModelImage", maxCount: 5 },
+  { name: "drivingLicenseImage", maxCount: 2 },
 ]);
 
 const processImages = async (req, quickCar) => {
-  const vehicleModelImage = req.files["vehicleModelImage"]
-    ? req.files["vehicleModelImage"][0]
-    : null;
-  const drivingLicenseImage = req.files["drivingLicenseImage"]
-    ? req.files["drivingLicenseImage"][0]
-    : null;
+  const vehicleModelImages = req.files["vehicleModelImage"] || [];
+  const drivingLicenseImages = req.files["drivingLicenseImage"] || [];
 
-  let vehicleModelImageUrl, drivingLicenseImageUrl;
+  let vehicleModelImageUrls = [];
+  let drivingLicenseImageUrls = [];
 
-  if (vehicleModelImage) {
-    if (
-      quickCar &&
-      quickCar.vehicleModelImage &&
-      quickCar.vehicleModelImage[0]
-    ) {
-      await deleteImageFromStorage(quickCar.vehicleModelImage[0].url);
-    }
-    const uploadedVehicleModelImage = await uploadImageToStorage(
-      vehicleModelImage,
+  for (let i = 0; i < vehicleModelImages.length; i++) {
+    const imageUrl = await uploadImageToStorage(
+      vehicleModelImages[i],
       req.body.vehicleModelImageAlt || ""
     );
-    vehicleModelImageUrl = uploadedVehicleModelImage.url;
+    vehicleModelImageUrls.push(imageUrl);
   }
 
-  if (drivingLicenseImage) {
-    if (
-      quickCar &&
-      quickCar.drivingLicenseImage &&
-      quickCar.drivingLicenseImage[0]
-    ) {
-      await deleteImageFromStorage(quickCar.drivingLicenseImage[0].url);
-    }
-    const uploadedDrivingLicenseImage = await uploadImageToStorage(
-      drivingLicenseImage,
+  for (let i = 0; i < drivingLicenseImages.length; i++) {
+    const imageUrl = await uploadImageToStorage(
+      drivingLicenseImages[i],
       req.body.drivingLicenseImageAlt || ""
     );
-    drivingLicenseImageUrl = uploadedDrivingLicenseImage.url;
+    drivingLicenseImageUrls.push(imageUrl);
   }
 
   return {
-    vehicleModelImageUrl,
-    drivingLicenseImageUrl,
+    vehicleModelImageUrls,
+    drivingLicenseImageUrls,
   };
 };
 
-// Controlador para crear un nuevo QuickCar
 const createQuickCar = asyncHandler(async (req, res) => {
   let {
     vehicleType,
@@ -97,6 +97,8 @@ const createQuickCar = asyncHandler(async (req, res) => {
     pricePerSeat,
     TripFare,
     PricePerKilometer,
+    CurrentLatitude,
+    CurrentLongitude,
   } = req.body;
 
   vehicleType = vehicleType.trim();
@@ -113,7 +115,7 @@ const createQuickCar = asyncHandler(async (req, res) => {
   session.startTransaction();
 
   try {
-    const { vehicleModelImageUrl, drivingLicenseImageUrl } =
+    const { vehicleModelImageUrls, drivingLicenseImageUrls } =
       await processImages(req);
 
     const foundStartLocation = await StartLocation.findOne({
@@ -123,7 +125,12 @@ const createQuickCar = asyncHandler(async (req, res) => {
       endLocationName,
     }).session(session);
 
-    let newStartLocation, newEndLocation;
+    const foundCurrentQuickcarLocation = await CurrentQuickCarLocation.findOne({
+      CurrentLatitude,
+      CurrentLongitude,
+    }).session(session);
+
+    let newStartLocation, newEndLocation, newCurrentQuickcarLocation;
 
     if (!foundStartLocation) {
       newStartLocation = new StartLocation({
@@ -145,26 +152,36 @@ const createQuickCar = asyncHandler(async (req, res) => {
       await newEndLocation.save({ session });
     }
 
+    if (!foundCurrentQuickcarLocation) {
+      newCurrentQuickcarLocation = new CurrentQuickCarLocation({
+        CurrentLatitude,
+        CurrentLongitude,
+      });
+      await newCurrentQuickcarLocation.save({ session });
+    }
+
     const starLocationId = foundStartLocation
       ? foundStartLocation._id
       : newStartLocation._id;
     const endLocationId = foundEndLocation
       ? foundEndLocation._id
       : newEndLocation._id;
+    const currentQuickcarLocationId = foundCurrentQuickcarLocation
+      ? foundCurrentQuickcarLocation._id
+      : newCurrentQuickcarLocation._id;
 
     const newQuickCar = new QuickCar({
       vehicleType,
       vehicleModel,
-      vehicleModelImage: [
-        { url: vehicleModelImageUrl, alt: req.body.vehicleModelImageAlt || "" },
-      ],
+      vehicleModelImage: vehicleModelImageUrls.map((url) => ({
+        url: url.url,
+        alt: req.body.vehicleModelImageAlt || "",
+      })),
       drivingLicense,
-      drivingLicenseImage: [
-        {
-          url: drivingLicenseImageUrl,
-          alt: req.body.drivingLicenseImageAlt || "",
-        },
-      ],
+      drivingLicenseImage: drivingLicenseImageUrls.map((url) => ({
+        url: url.url,
+        alt: req.body.drivingLicenseImageAlt || "",
+      })),
       startTime,
       endTime,
       regularDays,
@@ -175,21 +192,27 @@ const createQuickCar = asyncHandler(async (req, res) => {
       starLocation: starLocationId,
       endLocation: endLocationId,
       user: req.user._id,
-      QuickCarLocation: req.body.QuickCarLocation,
+      CurrentQuickCarLocation: currentQuickcarLocationId,
     });
     const savedQuickCar = await newQuickCar.save({ session });
-    req.user.global_user.QuickCar = savedQuickCar._id;
-    await req.user.save({ session });
-    await session.commitTransaction();
-    session.endSession();
 
-    res
-      .status(201)
-      .json({ global_user: req.user.global_user, quickCar: savedQuickCar });
+        await session.commitTransaction();
+        session.endSession();
+
+        // Poblar el usuario sin los campos sensibles y sin blogs y likes
+        const populatedQuickCar = await QuickCar.populate(savedQuickCar, [
+            'CurrentQuickCarLocation'
+        ]);
+
+        res.status(201).json({
+            quickCar: {
+                ...populatedQuickCar.toObject(),
+              
+            },
+        });
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-
     console.error("Error creating QuickCar:", error);
     res
       .status(500)
@@ -201,7 +224,7 @@ const createQuickCar = asyncHandler(async (req, res) => {
 const getAllQuickCars = asyncHandler(async (req, res) => {
   try {
     const quickCars = await QuickCar.find().populate(
-      "starLocation endLocation"
+      "starLocation endLocation CurrentQuickCarLocation",
     );
     res.status(200).json(quickCars);
   } catch (error) {
@@ -236,6 +259,7 @@ const getQuickCarById = asyncHandler(async (req, res) => {
 const updateQuickCar = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
+    driverIsActiveState,
     vehicleType,
     vehicleModel,
     drivingLicense,
@@ -262,7 +286,7 @@ const updateQuickCar = asyncHandler(async (req, res) => {
     if (!quickCar) {
       return res.status(404).json({ message: "QuickCar no encontrado" });
     }
-
+    quickCar.driverIsActiveState = driverIsActiveState;
     quickCar.vehicleType = vehicleType.trim();
     quickCar.vehicleModel = vehicleModel;
     quickCar.drivingLicense = drivingLicense;

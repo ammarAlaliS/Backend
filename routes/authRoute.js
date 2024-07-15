@@ -17,7 +17,7 @@ const {
   checkAccountStatus,
   AccountStatus,
 } = require("../middleawares/authMiddleWare");
-const { createTrip, joinTrip } = require("../controller/TripController");
+const { createTrip, joinTrip, getAllTrips, updateTripStatus } = require("../controller/DriverLogic/TripController");
 const { upload, createUser } = require("../controller/imageController");
 const {
   createBlog,
@@ -49,6 +49,9 @@ const {
   getQuickCarById,
   updateQuickCar,
   deleteQuickCar, } = require('../controller/DriverLogic/DriverController');
+const {
+  getNearbyQuickCars
+} = require('../controller/DriverLogic/CalculateDriversDistanceInKm')
 
 const router = express.Router();
 
@@ -57,6 +60,8 @@ router.get('/drivers', getAllQuickCars);
 router.get('/driver/:id', getQuickCarById);
 router.put('/driver/:id', handleDriverFormData, updateQuickCar);
 router.delete('/driver/:id', deleteQuickCar);
+
+router.get('/drivers-nearby', getNearbyQuickCars);
 
 /**
  * @swagger
@@ -427,6 +432,8 @@ router.get("/users", getUsers);
  *         description: Bad request
  */
 router.post("/create-trip", authMiddleware, createTrip);
+router.get("/trips", getAllTrips)
+router.put("/update/trip-status", updateTripStatus)
 
 /**
  * @swagger

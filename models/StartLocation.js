@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const startLocationSchema = new mongoose.Schema({
     startLocationName: {
         type: String,
-        required: [true, 'Start location is required'],
+        required: [false, 'Start location is required'],
         trim: true,
     },
     latitude: {

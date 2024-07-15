@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const endLocationSchema = new mongoose.Schema({
     endLocationName: {
         type: String,
-        required: [true, 'End location is required'],
+        required: [false, 'End location is required'],
         trim: true,
     },
     latitude: {

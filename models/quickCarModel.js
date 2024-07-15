@@ -111,9 +111,9 @@ const quickCarSchema = new mongoose.Schema({
         required: true,
         index: true,
     },
-    QuickCarLocation: {
+    CurrentQuickCarLocation: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'QuickCarLocation',
+        ref: 'CurrentQuickCarLocation',
         required: false,
         index: true,
     },

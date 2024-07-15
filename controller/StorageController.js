@@ -5,7 +5,6 @@ const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
 
-// Configuración de Google Cloud Storage
 const storage = new Storage({
   projectId: process.env.GCLOUD_PROJECT_ID,
   credentials: {
