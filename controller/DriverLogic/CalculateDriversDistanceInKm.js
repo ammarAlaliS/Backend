@@ -35,7 +35,7 @@ const getNearbyQuickCars = asyncHandler(async (req, res) => {
 
     const userLat = parseFloat(userLatitude);
     const userLng = parseFloat(userLongitude);
-    const maxDistance = 10; 
+    const maxDistance = 10;
 
     try {
         const activeQuickCars = await QuickCar.find({
@@ -45,6 +45,7 @@ const getNearbyQuickCars = asyncHandler(async (req, res) => {
             .populate('endLocation')
             .populate({
                 path: 'user',
+                select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
             });
 
         const nearbyQuickCars = [];
@@ -52,7 +53,7 @@ const getNearbyQuickCars = asyncHandler(async (req, res) => {
 
         activeQuickCars.forEach(quickCar => {
             const vehicleModelImage = quickCar.vehicleModelImage || [];
-            const vehicleModelImageUrl =  vehicleModelImage.map(image => image.url);
+            const vehicleModelImageUrl = vehicleModelImage.map(image => image.url);
 
             const startTime = quickCar.startTime && quickCar.startTime.length > 0 ? quickCar.startTime[0] : null;
             const endTime = quickCar.endTime && quickCar.endTime.length > 0 ? quickCar.endTime[0] : null;
@@ -62,11 +63,11 @@ const getNearbyQuickCars = asyncHandler(async (req, res) => {
 
             if (distanceToStarLocation <= maxDistance || distanceToEndLocation <= maxDistance) {
                 const formattedQuickCar = {
-                    DriverState: 'Activo', 
+                    DriverState: 'Activo',
                     vehicleType: quickCar.vehicleType,
                     vehicleModel: quickCar.vehicleModel,
                     StarLocation: quickCar.starLocation.startLocationName,
-                    EndLocation: quickCar.endLocation.endLocationName, 
+                    EndLocation: quickCar.endLocation.endLocationName,
                     StarTime: startTime ? { hour: startTime.hour, minute: startTime.minute } : null,
                     EndTime: endTime ? { hour: endTime.hour, minute: endTime.minute } : null,
                     availableSeats: quickCar.availableSeats,
@@ -92,9 +93,9 @@ const getNearbyQuickCars = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'No se encontraron conductores dentro del rango de 10 kilómetros.' });
         }
 
-        res.status(200).json({ 
+        res.status(200).json({
             message: 'Lista de conductores en el rango de 10 kilómetros.',
-            conductores: nearbyQuickCars 
+            conductores: nearbyQuickCars
         });
 
     } catch (error) {
@@ -104,4 +105,3 @@ const getNearbyQuickCars = asyncHandler(async (req, res) => {
 });
 
 module.exports = { getNearbyQuickCars, calculateDistance };
-

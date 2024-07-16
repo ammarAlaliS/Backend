@@ -190,7 +190,6 @@ const updateUser = asyncHandler(async (req, res) => {
 const getUsers = asyncHandler(async (req, res) => {
   try {
     const users = await User.find()
-      .populate({ path: 'global_user.QuickCar', options: { retainNullValues: true } })
       .populate({ path: 'Blog', options: { retainNullValues: true } });
 
     res.json(users.map(user => ({
@@ -200,7 +199,6 @@ const getUsers = asyncHandler(async (req, res) => {
       email: user.global_user.email,
       role: user.global_user.role,
       profile_img_url: user.global_user.profile_img_url || null,
-      QuickCar: user.global_user.QuickCar || null,
       Blog: user.Blog || null,
     })));
   } catch (error) {
