@@ -175,12 +175,7 @@ const updateProduct = asyncHandler(async (req, res) => {
         image.length == 0 ||
         image.indexOf(product.image[i]) < 0
       ) {
-        await deleteImageFromStorage(
-          product.image[i].replace(
-            "https://storage.googleapis.com/quickcar/",
-            ""
-          )
-        );
+        await deleteImageFromStorage(product.image[i]);
       }
     }
 
