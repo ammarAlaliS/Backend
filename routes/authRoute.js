@@ -60,6 +60,7 @@ const {
 } = require("../controller/DriverLogic/DriverController");
 const {
   getNearbyQuickCars,
+  getNearbyLocationQuickCars,
 } = require("../controller/DriverLogic/CalculateDriversDistanceInKm");
 
 const router = express.Router();
@@ -76,6 +77,7 @@ router.put("/driver/:id", handleDriverFormDataQuickCar, updateQuickCar);
 router.delete("/driver/:id", deleteQuickCar);
 
 router.get("/drivers-nearby", getNearbyQuickCars);
+router.get("/drivers-nearby-trip-filters", getNearbyLocationQuickCars);
 
 /**
  * @swagger

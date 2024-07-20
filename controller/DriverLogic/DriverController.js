@@ -5,7 +5,6 @@ const {
   processImages,
 } = require("../StorageController");
 const mongoose = require("mongoose");
-const { Storage } = require("@google-cloud/storage");
 
 const createQuickCar = asyncHandler(async (req, res) => {
   let {
@@ -183,8 +182,8 @@ const updateQuickCar = asyncHandler(async (req, res) => {
     quickCar.vehicleType = vehicleTypeTrim || quickCar.vehicleType;
     quickCar.vehicleModel = vehicleModel || quickCar.vehicleModel;
     quickCar.drivingLicense = drivingLicense || quickCar.drivingLicense;
-    quickCar.startTime = startTime || quickCar.startTime;
-    quickCar.endTime = endTime || quickCar.endTime;
+    quickCar.startTime = startTime ? JSON.parse(startTime) : quickCar.startTime;
+    quickCar.endTime = endTime ? JSON.parse(endTime) : quickCar.endTime;
     quickCar.regularDays = regularDaysSplit || quickCar.regularDays;
     quickCar.availableSeats = availableSeats || quickCar.availableSeats;
     quickCar.pricePerSeat = pricePerSeat || quickCar.pricePerSeat;
@@ -251,7 +250,7 @@ const updateQuickCar = asyncHandler(async (req, res) => {
 
       for (let i = 0; i < vehicleModelImageUrls.length; i++) {
         vehicleModelImageData.push({
-          url: vehicleModelImageUrls[i],
+          url: vehicleModelImageUrls[i].url,
           alt: quickCar.vehicleType + " " + quickCar.vehicleModel,
         });
       }
@@ -276,23 +275,26 @@ const updateQuickCar = asyncHandler(async (req, res) => {
 
       for (let i = 0; i < drivingLicenseImageUrls.length; i++) {
         drivingLicenseImageUrlsData.push({
-          url: drivingLicenseImageUrls[i],
-          alt: "",
+          url: drivingLicenseImageUrls[i].url,
+          alt: "drivingLicenseImage",
         });
       }
 
       for (
         let i = 0;
-        i < drivingLicenseImageUrls.split(",").map((day) => day.trim()).length;
+        i <
+        drivingLicenseImageSavedUrl.split(",").map((day) => day.trim()).length;
         i++
       ) {
         drivingLicenseImageUrlsData.push({
-          url: drivingLicenseImageUrls.split(",").map((day) => day.trim())[i],
-          alt: "",
+          url: drivingLicenseImageSavedUrl.split(",").map((day) => day.trim())[
+            i
+          ],
+          alt: "drivingLicenseImage",
         });
       }
 
-      quickCar.vehicleModelImage = drivingLicenseImageUrlsData;
+      quickCar.drivingLicenseImage = drivingLicenseImageUrlsData;
     }
 
     await quickCar.save({ session });

@@ -1,7 +1,5 @@
 const TripMade = require("../../models/TripModel");
 const QuickCar = require("../../models/quickCarModel");
-const StartLocation = require("../../models/StartLocation");
-const EndLocation = require("../../models/EndLocation"); // Corrige el error tipográfico aquí
 const User = require("../../models/userModel");
 const asyncHandler = require("express-async-handler");
 
@@ -29,64 +27,53 @@ function calculateDistance(point1, point2) {
 
 // Controller to create a new trip
 const createTrip = asyncHandler(async (req, res) => {
-  const driverUserId = req.user._id; // ID of the driver user obtained from the JWT token
-  const { paymentType, startLocationId, endLocationId, numberOfSeatsRequested } = req.body;
+  const userId = req.user._id; // ID of the driver user obtained from the JWT token
+  const {
+    paymentType,
+    startLocationName,
+    startLocationLatitude,
+    startLocationLongitude,
+    endLocationName,
+    endLocationLatitude,
+    endLocationLongitude,
+    numberOfSeatsRequested,
+    quickCarId,
+  } = req.body;
 
   // Find the QuickCar associated with the driver user
-  const quickCar = await QuickCar.findOne({ user: driverUserId });
+  const quickCar = await QuickCar.findById(quickCarId);
 
   if (!quickCar || !quickCar.driverIsActiveState) {
-    return res.status(400).json({ error: "El QuickCar no está activo o no existe." });
+    return res
+      .status(400)
+      .json({ error: "El QuickCar no está activo o no existe." });
   }
 
   if (numberOfSeatsRequested > quickCar.availableSeats) {
     return res.status(400).json({
-      error: "El número de asientos solicitados excede los disponibles en el QuickCar.",
+      error:
+        "El número de asientos solicitados excede los disponibles en el QuickCar.",
     });
-  }
-
-  // Verify and create StartLocation if it does not exist
-  let startLocation = startLocationId;
-  if (!startLocationId) {
-    // Create the StartLocation based on the received data
-    startLocation = await StartLocation.create({
-      latitude: req.body.startLocation.latitude,
-      longitude: req.body.startLocation.longitude,
-      driverUser: driverUserId,
-    });
-  } else {
-    startLocation = await StartLocation.findById(startLocationId);
-    if (!startLocation) {
-      return res.status(404).json({ error: "StartLocation no encontrado" });
-    }
-  }
-
-  // Verify and create EndLocation if it does not exist
-  let endLocation = endLocationId;
-  if (!endLocationId) {
-    // Create the EndLocation based on the received data
-    endLocation = await EndLocation.create({
-      latitude: req.body.endLocation.latitude,
-      longitude: req.body.endLocation.longitude,
-      driverUser: driverUserId,
-    });
-  } else {
-    endLocation = await EndLocation.findById(endLocationId);
-    if (!endLocation) {
-      return res.status(404).json({ error: "EndLocation no encontrado" });
-    }
   }
 
   // Ensure valid IDs for StartLocation and EndLocation
   const newTrip = await TripMade.create({
-    status: "Created",
+    status: "pending",
     paymentType,
     numberOfSeatsRequested,
-    totalRate: quickCar.pricePerSeat * numberOfSeatsRequested || null,
-    startLocation: startLocation._id, // Cambia a startLocation
-    endLocation: endLocation._id, // Cambia a endLocation
-    driverUser: driverUserId,
-    passengerUsers: [], // Cambia a un array vacío
+    totalRate: quickCar.pricePerSeat * numberOfSeatsRequested,
+    startLocation: {
+      startLocationName: startLocationName,
+      latitude: startLocationLatitude,
+      longitude: startLocationLongitude,
+    },
+    endLocation: {
+      endLocationName: endLocationName,
+      latitude: endLocationLatitude,
+      longitude: endLocationLongitude,
+    },
+    driverUser: quickCarId,
+    passengerUser: userId, // Cambia a un array vacío
   });
 
   res.status(201).json(newTrip);
@@ -96,20 +83,24 @@ const createTrip = asyncHandler(async (req, res) => {
 const joinTrip = asyncHandler(async (req, res) => {
   const tripId = req.params.tripId;
   const userId = req.user._id;
-  
+
   const trip = await TripMade.findById(tripId);
+
+  return res.status(500).json({ error: "Endpoint no implementado" });
 
   if (!trip) {
     return res.status(404).json({ error: "Viaje no encontrado" });
   }
 
-  if (trip.passengerUsers.length >= 4) {
-    return res.status(400).json({ error: "El viaje ya está completo." });
-  }
+  // if (trip.passengerUsers.length >= 4) {
+  //   return res.status(400).json({ error: "El viaje ya está completo." });
+  // }
 
-  if (trip.passengerUsers.includes(userId)) {
-    return res.status(400).json({ error: "El usuario ya está suscrito a este viaje." });
-  }
+  // if (trip.passengerUsers.includes(userId)) {
+  //   return res
+  //     .status(400)
+  //     .json({ error: "El usuario ya está suscrito a este viaje." });
+  // }
 
   trip.passengerUsers.push(userId);
   await trip.save();
@@ -121,15 +112,15 @@ const joinTrip = asyncHandler(async (req, res) => {
 const getAllTrips = asyncHandler(async (req, res) => {
   try {
     const trips = await TripMade.find()
-      .populate('startLocation')
-      .populate('endLocation')
       .populate({
-        path: 'driverUser',
-        select: 'global_user.first_name global_user.last_name global_user.profile_img_url global_user.role'
+        path: "driverUser",
+        select:
+          "global_user.first_name global_user.last_name global_user.profile_img_url global_user.role",
       })
       .populate({
-        path: 'passengerUsers',
-        select: 'global_user.first_name global_user.last_name global_user.profile_img_url global_user.role'
+        path: "passengerUser",
+        select:
+          "global_user.first_name global_user.last_name global_user.profile_img_url global_user.role",
       });
 
     res.status(200).json(trips);
@@ -160,6 +151,6 @@ module.exports = {
   createTrip,
   joinTrip,
   calculateDistance,
-  getAllTrips, 
-  updateTripStatus
+  getAllTrips,
+  updateTripStatus,
 };
