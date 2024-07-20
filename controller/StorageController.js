@@ -40,7 +40,6 @@ const uploadImageToStorage = async (file, altText) => {
       resolve({ url: publicUrl, alt: altText });
       console.log(`Imagen subida: ${publicUrl}`);
     });
-
     console.log(`Archivo local eliminado: ${file.path}`);
     blobStream.end(file.buffer);
   });

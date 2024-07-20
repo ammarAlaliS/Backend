@@ -51,6 +51,7 @@ const {
   handleProductFormData,
   handleDriverFormDataQuickCar,
 } = require("../controller/StorageController");
+
 const {
   createQuickCar,
   getAllQuickCars,
@@ -58,10 +59,16 @@ const {
   updateQuickCar,
   deleteQuickCar,
 } = require("../controller/DriverLogic/DriverController");
+
 const {
   getNearbyQuickCars,
   getNearbyLocationQuickCars,
 } = require("../controller/DriverLogic/CalculateDriversDistanceInKm");
+
+const {
+  sendMessage,
+  getMessageById,
+} = require("../controller/MessageLogic/MessageController");
 
 const router = express.Router();
 
@@ -78,6 +85,25 @@ router.delete("/driver/:id", deleteQuickCar);
 
 router.get("/drivers-nearby", getNearbyQuickCars);
 router.get("/drivers-nearby-trip-filters", getNearbyLocationQuickCars);
+
+router.post("/send/:receiverId", authMiddleware, sendMessage);
+router.get("/message/:userId", authMiddleware, getMessageById);
+
+/**
+ * @swagger
+ * /api/ObbaraMarket/users:
+ *   get:
+ *     summary: Get users
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *       400:
+ *         description: Bad request
+ */
+router.get("/all-users", getUsers);
 
 /**
  * @swagger
@@ -385,22 +411,6 @@ router.post("/register", upload, createUser);
 
 router.post("/login", loginUserCtrl);
 router.get("/user/:id", authMiddleware, findUser);
-
-/**
- * @swagger
- * /api/ObbaraMarket/users:
- *   get:
- *     summary: Get users
- *     tags: [Usuarios]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Users retrieved successfully
- *       400:
- *         description: Bad request
- */
-router.get("/users", getUsers);
 
 /**
  * @swagger
