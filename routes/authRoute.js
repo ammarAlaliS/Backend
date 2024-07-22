@@ -10,6 +10,7 @@ const {
   unBlockUser,
   handleRefreshToken,
   findDeletedAccounts,
+  updateUserRole,
 } = require("../controller/userController");
 const {
   authMiddleware,
@@ -17,13 +18,18 @@ const {
   checkAccountStatus,
   AccountStatus,
 } = require("../middleawares/authMiddleWare");
-const { createTrip, joinTrip, getAllTrips, updateTripStatus } = require("../controller/DriverLogic/TripController");
+const {
+  createTrip,
+  joinTrip,
+  getAllTrips,
+  updateTripStatus,
+} = require("../controller/DriverLogic/TripController");
 const { upload, createUser } = require("../controller/imageController");
 const {
   createBlog,
   handleFormData,
   getAllBlogs,
-  deleteBlogById
+  deleteBlogById,
 } = require("../controller/BlogController");
 const {
   getProducts,
@@ -41,26 +47,47 @@ const {
   getBlogComment,
 } = require("../controller/CommentController");
 
-const { handleProductFormData } = require("../controller/StorageController");
-const { 
-  createQuickCar, 
-  handleDriverFormData,
+const {
+  handleProductFormData,
+  handleDriverFormDataQuickCar,
+} = require("../controller/StorageController");
+
+const {
+  createQuickCar,
   getAllQuickCars,
-  getQuickCarById,
+  getQuickCarByGlobalUserId,
   updateQuickCar,
-  deleteQuickCar, } = require('../controller/DriverLogic/DriverController');
+  deleteQuickCar,
+} = require("../controller/DriverLogic/DriverController");
+
 const {
-  getNearbyQuickCars
-} = require('../controller/DriverLogic/CalculateDriversDistanceInKm')
+  getNearbyQuickCars,
+  getNearbyLocationQuickCars,
+} = require("../controller/DriverLogic/CalculateDriversDistanceInKm");
+
 const {
-  sendMessage, 
-  getMessageById
-} = require('../controller/MessageLogic/MessageController')
+  sendMessage,
+  getMessageById,
+} = require("../controller/MessageLogic/MessageController");
 
 const router = express.Router();
 
-router.post('/send/:receiverId',authMiddleware, sendMessage);
-router.get('/message/:userId',authMiddleware, getMessageById);
+router.post(
+  "/driver/register",
+  authMiddleware,
+  handleDriverFormDataQuickCar,
+  createQuickCar
+);
+router.get("/drivers", getAllQuickCars);
+router.get("/driver/:userId", getQuickCarByGlobalUserId);
+router.put("/driver/:id", handleDriverFormDataQuickCar, updateQuickCar);
+router.delete("/driver/:id", deleteQuickCar);
+
+router.get("/drivers-nearby", getNearbyQuickCars);
+router.get("/drivers-nearby-trip-filters", getNearbyLocationQuickCars);
+
+router.post("/send/:receiverId", authMiddleware, sendMessage);
+router.get("/message/:userId", authMiddleware, getMessageById);
 
 /**
  * @swagger
@@ -77,15 +104,6 @@ router.get('/message/:userId',authMiddleware, getMessageById);
  *         description: Bad request
  */
 router.get("/all-users", getUsers);
-
-// =====================================================================================
-
-router.post('/driver/register', authMiddleware, handleDriverFormData, createQuickCar);
-router.get('/drivers', getAllQuickCars);
-router.get('/driver/:id', getQuickCarById);
-router.put('/driver/:id', handleDriverFormData, updateQuickCar);
-router.delete('/driver/:id', deleteQuickCar);
-router.get('/drivers-nearby', getNearbyQuickCars);
 
 /**
  * @swagger
@@ -116,18 +134,9 @@ router.post(
   createBlog
 );
 
-router.delete(
-  "/delete/blog/:blogId",
-  authMiddleware, 
-  isAdmin, 
-  deleteBlogById
-);
+router.delete("/delete/blog/:blogId", authMiddleware, isAdmin, deleteBlogById);
 
-
-router.get(
-  "/blogs", 
-  getAllBlogs
-);
+router.get("/blogs", getAllBlogs);
 
 /**
  * @swagger
@@ -403,7 +412,21 @@ router.post("/register", upload, createUser);
 router.post("/login", loginUserCtrl);
 router.get("/user/:id", authMiddleware, findUser);
 
-
+/**
+ * @swagger
+ * /api/ObbaraMarket/users:
+ *   get:
+ *     summary: Get users
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *       400:
+ *         description: Bad request
+ */
+router.put("/user/role", authMiddleware, updateUserRole);
 
 /**
  * @swagger
@@ -442,8 +465,8 @@ router.get("/user/:id", authMiddleware, findUser);
  *         description: Bad request
  */
 router.post("/create-trip", authMiddleware, createTrip);
-router.get("/trips", getAllTrips)
-router.put("/update/trip-status", updateTripStatus)
+router.get("/trips", getAllTrips);
+router.put("/update/trip-status", updateTripStatus);
 
 /**
  * @swagger

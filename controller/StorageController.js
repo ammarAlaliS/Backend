@@ -18,6 +18,11 @@ const bucketName = "quickcar-storage"; // Nombre de tu bucket en Google Cloud St
 const memoryStorage = multer.memoryStorage();
 const upload = multer({ storage: memoryStorage });
 
+const handleDriverFormDataQuickCar = upload.fields([
+  { name: "vehicleModelImage", maxCount: 5 },
+  { name: "drivingLicenseImage", maxCount: 2 },
+]);
+
 // Función para subir una imagen a Google Cloud Storage
 const uploadImageToStorage = async (file, altText) => {
   const blob = storage
@@ -35,7 +40,6 @@ const uploadImageToStorage = async (file, altText) => {
       resolve({ url: publicUrl, alt: altText });
       console.log(`Imagen subida: ${publicUrl}`);
     });
-   
     console.log(`Archivo local eliminado: ${file.path}`);
     blobStream.end(file.buffer);
   });
@@ -94,7 +98,17 @@ const processImages = async (files) => {
 // Función para eliminar una imagen de Google Cloud Storage
 const deleteImageFromStorage = async (fileName) => {
   try {
-    await storage.bucket(bucketName).file(fileName).delete();
+    if (fileName) {
+      await storage
+        .bucket(bucketName)
+        .file(
+          fileName.replace(
+            "https://storage.googleapis.com/quickcar-storage/",
+            ""
+          )
+        )
+        .delete();
+    }
   } catch (error) {
     console.error(`No se encontro la imagen: ${error.message}`);
   }
@@ -106,4 +120,5 @@ module.exports = {
   processImages,
   handleProductFormData,
   deleteImageFromStorage,
+  handleDriverFormDataQuickCar,
 };
