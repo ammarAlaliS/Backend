@@ -8,7 +8,7 @@ function initialize(server) {
     console.log("Un cliente se ha conectado");
 
     //Unirse a una sala
-    io.on("joinDriverRoom", (roomId) => {
+    socket.on("joinDriverRoom", (roomId) => {
       socket.join(roomId);
     });
 
