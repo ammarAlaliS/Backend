@@ -58,6 +58,14 @@ const getAllUserMessages = async (req, res) => {
                 { receiver: userId }
             ]
         })
+        .populate({
+            path: 'receiver',
+            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url' // Selecciona los campos necesarios
+        })
+        .populate({
+            path: 'sender',
+            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url' // Selecciona los campos necesarios
+        })
         .sort({ timestamp: -1 }) // Ordenar por timestamp descendente
         .skip(skip)
         .limit(limit);
@@ -89,6 +97,7 @@ const getAllUserMessages = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener los mensajes.' });
     }
 };
+
 const getAllMessages = async (req, res) => {
     try {
         if (!req.user.isAdmin) {

@@ -49,15 +49,14 @@ app.use(errorHandler);
 
 // Creación del servidor HTTP con Express
 const server = http.createServer(app);
+
 // Inicialización de socket.io
 initialize(server);
-initializeServer(server)
+initializeServer(server);
 
 // Ajuste de timeouts
 server.keepAliveTimeout = 120000; // 2 minutos en milisegundos
 server.headersTimeout = 130000;   // 2 minutos y 10 segundos en milisegundos
-
-
 
 // Inicio del servidor en el puerto especificado
 server.listen(PORT, '0.0.0.0', () => {

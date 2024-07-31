@@ -7,12 +7,12 @@ function initialize(server) {
   io.on("connection", (socket) => {
     console.log("Un cliente se ha conectado");
 
-    //Unirse a una sala
+    // Unirse a una sala
     socket.on("joinDriverRoom", (roomId) => {
       socket.join(roomId);
     });
 
-    // Emitir ubicacion a una sala
+    // Emitir ubicación a una sala
     socket.on("sendDriverLocation", ({ room, driverLocation }) => {
       io.to(room).emit("reciveDriverLocation", driverLocation);
     });
@@ -24,7 +24,7 @@ function emitEvent(eventName, eventData) {
     io.emit(eventName, eventData);
     console.log(`Evento "${eventName}" emitido con los datos:`, eventData);
   } else {
-    console.error("Socket.io is not initialized");
+    console.error("Socket.io no está inicializado");
   }
 }
 

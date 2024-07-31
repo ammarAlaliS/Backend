@@ -1,4 +1,3 @@
-// socket/MessageSocket.js
 const socketIo = require("socket.io");
 
 let io;
