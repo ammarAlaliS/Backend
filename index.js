@@ -9,7 +9,6 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors'); 
 const setupSwaggerDocs = require('./swaggerDocs'); 
 const { initialize } = require('./socketLogic'); 
-const { initializeServer } = require('./socket/MessageSocket'); // Importar la función initialize
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,7 +51,6 @@ const server = http.createServer(app);
 
 // Inicialización de socket.io
 initialize(server);
-initializeServer(server);
 
 // Ajuste de timeouts
 server.keepAliveTimeout = 120000; // 2 minutos en milisegundos

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Message = require('../../models/MessageModel');
-const { emitEvent } = require('../../socket/MessageSocket'); 
+const { emitEvent } = require('../../socketLogic'); 
 
 const sendMessage = async (req, res) => {
     try {
