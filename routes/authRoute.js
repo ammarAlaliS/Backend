@@ -15,8 +15,8 @@ const {
 const {
   authMiddleware,
   isAdmin,
-  checkAccountStatus,
-  AccountStatus,
+  auth
+  
 } = require("../middleawares/authMiddleWare");
 const {
   createTrip,
@@ -67,7 +67,10 @@ const {
 
 const {
   sendMessage,
-  getMessageById,
+  getAllUserMessages,
+  getAllMessages,
+  getUserConversations
+
 } = require("../controller/MessageLogic/MessageController");
 
 const router = express.Router();
@@ -87,7 +90,10 @@ router.get("/drivers-nearby", getNearbyQuickCars);
 router.get("/drivers-nearby-trip-filters", getNearbyLocationQuickCars);
 
 router.post("/send/:receiverId", authMiddleware, sendMessage);
-router.get("/message/:userId", authMiddleware, getMessageById);
+router.get("/message/:userId", authMiddleware,  getAllUserMessages);
+router.get('/conversations', authMiddleware, getUserConversations);
+router.get('/messages', authMiddleware, getAllMessages);
+
 
 /**
  * @swagger

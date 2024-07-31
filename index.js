@@ -8,7 +8,8 @@ const { notFound, errorHandler } = require('./middleawares/errorHandle');
 const cookieParser = require('cookie-parser');
 const cors = require('cors'); 
 const setupSwaggerDocs = require('./swaggerDocs'); 
-const { initialize } = require('./socketLogic');  // Importar la función initialize
+const { initialize } = require('./socketLogic'); 
+const { initializeServer } = require('./socket/MessageSocket'); // Importar la función initialize
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,13 +49,15 @@ app.use(errorHandler);
 
 // Creación del servidor HTTP con Express
 const server = http.createServer(app);
+// Inicialización de socket.io
+initialize(server);
+initializeServer(server)
 
 // Ajuste de timeouts
 server.keepAliveTimeout = 120000; // 2 minutos en milisegundos
 server.headersTimeout = 130000;   // 2 minutos y 10 segundos en milisegundos
 
-// Inicialización de socket.io
-initialize(server);
+
 
 // Inicio del servidor en el puerto especificado
 server.listen(PORT, '0.0.0.0', () => {
