@@ -150,6 +150,7 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
 
     // Enviar la respuesta al cliente con el token de acceso y la información del usuario
     res.json({
+      id: findUser._id || null,
       first_name: findUser.global_user.first_name,
       last_name: findUser.global_user.last_name,
       profile_img_url: findUser.global_user.profile_img_url || null,
