@@ -127,9 +127,15 @@ const getAllMessages = async (req, res) => {
     }
 };
 
+
 const getUserConversations = async (req, res) => {
     try {
         const userId = req.user._id.toString();
+
+        // Parámetros de paginación
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
 
         // Encontrar todas las conversaciones donde el usuario es el remitente o el receptor
         const messages = await Message.find({
@@ -137,7 +143,9 @@ const getUserConversations = async (req, res) => {
                 { sender: userId },
                 { receiver: userId }
             ]
-        }).populate('sender receiver', 'username'); // Asumiendo que tienes un campo `username` en el modelo User
+        }).populate('sender receiver', 'username') // Asumiendo que tienes un campo `username` en el modelo User
+        .skip(skip)
+        .limit(limit);
 
         // Extraer los usuarios únicos con los que el usuario ha intercambiado mensajes
         const users = new Set();
@@ -150,11 +158,25 @@ const getUserConversations = async (req, res) => {
             }
         });
 
-        res.json(Array.from(users).map(user => JSON.parse(user)));
+        // Emitir las conversaciones obtenidas al usuario
+        emitEvent(userId, 'loadConversations', {
+            totalConversations: users.size,
+            totalPages: Math.ceil(users.size / limit),
+            currentPage: page,
+            conversations: Array.from(users).map(user => JSON.parse(user))
+        });
+
+        res.json({
+            totalConversations: users.size,
+            totalPages: Math.ceil(users.size / limit),
+            currentPage: page,
+            conversations: Array.from(users).map(user => JSON.parse(user))
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al obtener las conversaciones de usuario.' });
     }
 };
+
 
 module.exports = { sendMessage, getAllUserMessages, getAllMessages, getUserConversations };
