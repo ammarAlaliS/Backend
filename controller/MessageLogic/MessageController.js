@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Message = require('../../models/MessageModel');
-const User = require('../../models/UserModel');
+const User = require('../../models/userModel');
 const { emitEvent } = require('../../socketLogic');
 
 // Controlador para enviar mensajes
@@ -8,7 +8,7 @@ const sendMessage = async (req, res) => {
     try {
         const { content } = req.body;
         const { receiverId } = req.params;
-        const senderId = req.user._id.toString(); // Convierte a cadena
+        const senderId = req.user._id.toString(); np
 
         // Validación de entrada
         if (!content || !receiverId) {
