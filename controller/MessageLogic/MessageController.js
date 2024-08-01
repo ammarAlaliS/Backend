@@ -152,7 +152,7 @@ const getUserConversations = async (req, res) => {
                 { sender: userId },
                 { receiver: userId }
             ]
-        }).populate('sender receiver', 'username') // Asumiendo que tienes un campo `username` en el modelo User
+        }).populate('sender receiver', 'username')
         .skip(skip)
         .limit(limit);
 
@@ -167,19 +167,21 @@ const getUserConversations = async (req, res) => {
             }
         });
 
+        const uniqueUsers = Array.from(users).map(user => JSON.parse(user));
+
         // Emitir las conversaciones obtenidas al usuario
         emitEvent(userId, 'loadConversations', {
-            totalConversations: users.size,
-            totalPages: Math.ceil(users.size / limit),
+            totalConversations: uniqueUsers.length,
+            totalPages: Math.ceil(uniqueUsers.length / limit),
             currentPage: page,
-            conversations: Array.from(users).map(user => JSON.parse(user))
+            conversations: uniqueUsers
         });
 
         res.json({
-            totalConversations: users.size,
-            totalPages: Math.ceil(users.size / limit),
+            totalConversations: uniqueUsers.length,
+            totalPages: Math.ceil(uniqueUsers.length / limit),
             currentPage: page,
-            conversations: Array.from(users).map(user => JSON.parse(user))
+            conversations: uniqueUsers
         });
     } catch (error) {
         console.error(error);
