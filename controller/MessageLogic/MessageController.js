@@ -8,7 +8,7 @@ const sendMessage = async (req, res) => {
     try {
         const { content } = req.body;
         const { receiverId } = req.params;
-        const senderId = req.user._id.toString(); np
+        const senderId = req.user._id.toString(); 
 
         // Validación de entrada
         if (!content || !receiverId) {
