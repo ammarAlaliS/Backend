@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const Message = require('../../models/MessageModel');
-const { emitEvent } = require('../../socketLogic'); 
+const { emitEvent } = require('../../socketLogic');
 
+// Controlador para enviar mensajes
 const sendMessage = async (req, res) => {
     try {
         const { content } = req.body;
@@ -34,6 +35,7 @@ const sendMessage = async (req, res) => {
     }
 };
 
+// Controlador para obtener todos los mensajes entre el usuario y otro usuario
 const getAllUserMessages = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -60,13 +62,13 @@ const getAllUserMessages = async (req, res) => {
         })
         .populate({
             path: 'receiver',
-            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url' // Selecciona los campos necesarios
+            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
         })
         .populate({
             path: 'sender',
-            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url' // Selecciona los campos necesarios
+            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
         })
-        .sort({ timestamp: -1 }) // Ordenar por timestamp descendente
+        .sort({ timestamp: -1 })
         .skip(skip)
         .limit(limit);
 
@@ -78,19 +80,35 @@ const getAllUserMessages = async (req, res) => {
             ]
         });
 
+        // Agrupar mensajes por receptor
+        const groupedMessages = messages.reduce((acc, message) => {
+            const key = message.receiver._id.toString();
+            if (!acc[key]) {
+                acc[key] = {
+                    receiverId: key,
+                    receiver: message.receiver,
+                    messages: []
+                };
+            }
+            acc[key].messages.push(message);
+            return acc;
+        }, {});
+
+        const result = Object.values(groupedMessages);
+
         // Emitir los mensajes obtenidos al usuario
         emitEvent(userId, 'loadMessages', {
             totalMessages,
             totalPages: Math.ceil(totalMessages / limit),
             currentPage: page,
-            messages
+            conversations: result
         });
 
         res.json({
             totalMessages,
             totalPages: Math.ceil(totalMessages / limit),
             currentPage: page,
-            messages
+            conversations: result
         });
     } catch (error) {
         console.error(error);
@@ -98,6 +116,7 @@ const getAllUserMessages = async (req, res) => {
     }
 };
 
+// Controlador para obtener todos los mensajes (admin)
 const getAllMessages = async (req, res) => {
     try {
         if (!req.user.isAdmin) {
@@ -136,7 +155,7 @@ const getAllMessages = async (req, res) => {
     }
 };
 
-
+// Controlador para obtener las conversaciones con los usuarios
 const getUserConversations = async (req, res) => {
     try {
         const userId = req.user._id.toString();
@@ -146,48 +165,33 @@ const getUserConversations = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // Encontrar todas las conversaciones donde el usuario es el remitente o el receptor
-        const messages = await Message.find({
-            $or: [
-                { sender: userId },
-                { receiver: userId }
-            ]
-        }).populate('sender receiver', 'username')
-        .skip(skip)
-        .limit(limit);
+        // Agregación para obtener usuarios únicos con los que se ha intercambiado mensajes
+        const conversations = await Message.aggregate([
+            { $match: { $or: [{ sender: mongoose.Types.ObjectId(userId) }, { receiver: mongoose.Types.ObjectId(userId) }] } },
+            { $group: { _id: { $cond: [{ $eq: ["$sender", mongoose.Types.ObjectId(userId)] }, "$receiver", "$sender"] } } },
+            { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+            { $unwind: "$user" },
+            { $project: { _id: 1, username: "$user.username", profile_img_url: "$user.profile_img_url" } },
+            { $skip: skip },
+            { $limit: limit }
+        ]);
 
-        // Extraer los usuarios únicos con los que el usuario ha intercambiado mensajes
-        const users = new Set();
-        messages.forEach(message => {
-            if (message.sender._id.toString() !== userId) {
-                users.add(JSON.stringify({ _id: message.sender._id, username: message.sender.username }));
-            }
-            if (message.receiver._id.toString() !== userId) {
-                users.add(JSON.stringify({ _id: message.receiver._id, username: message.receiver.username }));
-            }
-        });
-
-        const uniqueUsers = Array.from(users).map(user => JSON.parse(user));
-
-        // Emitir las conversaciones obtenidas al usuario
-        emitEvent(userId, 'loadConversations', {
-            totalConversations: uniqueUsers.length,
-            totalPages: Math.ceil(uniqueUsers.length / limit),
-            currentPage: page,
-            conversations: uniqueUsers
-        });
+        // Contar el total de conversaciones
+        const totalConversations = await Message.aggregate([
+            { $match: { $or: [{ sender: mongoose.Types.ObjectId(userId) }, { receiver: mongoose.Types.ObjectId(userId) }] } },
+            { $group: { _id: { $cond: [{ $eq: ["$sender", mongoose.Types.ObjectId(userId)] }, "$receiver", "$sender"] } } }
+        ]).count();
 
         res.json({
-            totalConversations: uniqueUsers.length,
-            totalPages: Math.ceil(uniqueUsers.length / limit),
+            totalConversations: conversations.length,
+            totalPages: Math.ceil(totalConversations / limit),
             currentPage: page,
-            conversations: uniqueUsers
+            conversations
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al obtener las conversaciones de usuario.' });
     }
 };
-
 
 module.exports = { sendMessage, getAllUserMessages, getAllMessages, getUserConversations };
