@@ -69,7 +69,7 @@ const {
   sendMessage,
   getAllUserMessages,
   getAllMessages,
-  getUserConversations
+  GetUserInformacionToListMyUsersInteraction
 
 } = require("../controller/MessageLogic/MessageController");
 
@@ -90,9 +90,7 @@ router.get("/drivers-nearby", getNearbyQuickCars);
 router.get("/drivers-nearby-trip-filters", getNearbyLocationQuickCars);
 
 router.post("/send/:receiverId", authMiddleware, sendMessage);
-router.get("/message/:userId", authMiddleware,  getAllUserMessages);
-router.get('/conversations', authMiddleware, getUserConversations);
-router.get('/messages', authMiddleware, getAllMessages);
+router.get('/user/information/conversations/:userId', authMiddleware, GetUserInformacionToListMyUsersInteraction);
 
 
 /**

@@ -48,7 +48,6 @@ const userSchema = new mongoose.Schema({
     required: false,
   }],
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Like' }]
-
 });
 
 userSchema.pre('save', async function (next) {
@@ -68,4 +67,5 @@ userSchema.methods.isPasswordMatched = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.global_user.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+// Verifica si el modelo ya está registrado antes de definirlo
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);
