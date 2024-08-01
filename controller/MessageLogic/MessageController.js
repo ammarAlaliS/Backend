@@ -60,6 +60,9 @@ const getAllUserMessages = async (req, res) => {
                 { receiver: userId }
             ]
         })
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(limit)
         .populate({
             path: 'receiver',
             select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
@@ -67,10 +70,7 @@ const getAllUserMessages = async (req, res) => {
         .populate({
             path: 'sender',
             select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
-        })
-        .sort({ timestamp: -1 })
-        .skip(skip)
-        .limit(limit);
+        });
 
         // Contar el total de mensajes
         const totalMessages = await Message.countDocuments({
@@ -85,12 +85,19 @@ const getAllUserMessages = async (req, res) => {
             const key = message.receiver._id.toString();
             if (!acc[key]) {
                 acc[key] = {
-                    receiverId: key,
                     receiver: message.receiver,
+                    sender: message.sender,
                     messages: []
                 };
             }
-            acc[key].messages.push(message);
+            acc[key].messages.push({
+                _id: message._id,
+                sender: { _id: message.sender._id },
+                receiver: { _id: message.receiver._id },
+                content: message.content,
+                read: message.read,
+                timestamp: message.timestamp
+            });
             return acc;
         }, {});
 
@@ -115,6 +122,7 @@ const getAllUserMessages = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener los mensajes.' });
     }
 };
+
 
 // Controlador para obtener todos los mensajes (admin)
 const getAllMessages = async (req, res) => {
