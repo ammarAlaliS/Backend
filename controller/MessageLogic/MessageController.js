@@ -135,4 +135,68 @@ const GetUserInformacionToListMyUsersInteraction = async (req, res) => {
     }
 };
 
-module.exports = { sendMessage, GetUserInformacionToListMyUsersInteraction };
+const getConversationWithUser = async (req, res) => {
+    try {
+        const { userId } = req.params; // ID del otro usuario
+        const senderId = req.user._id.toString(); // ID del usuario autenticado
+
+        // Validación de entrada
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'El ID del usuario no es válido.' });
+        }
+
+        // Verificar que el usuario autenticado tenga permiso para ver las conversaciones
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: 'Acceso no autorizado.' });
+        }
+
+        // Parámetros de paginación (últimos 10 mensajes)
+        const limit = 10;
+
+        // Obtener mensajes entre el usuario autenticado y el otro usuario
+        const messages = await Message.find({
+            $or: [
+                { sender: senderId, receiver: userId },
+                { sender: userId, receiver: senderId }
+            ]
+        })
+        .sort({ timestamp: -1 }) // Ordenar por timestamp en orden descendente
+        .limit(limit)
+        .populate({
+            path: 'receiver',
+            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
+        })
+        .populate({
+            path: 'sender',
+            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
+        });
+
+        // Contar el total de mensajes entre los dos usuarios
+        const totalMessages = await Message.countDocuments({
+            $or: [
+                { sender: senderId, receiver: userId },
+                { sender: userId, receiver: senderId }
+            ]
+        });
+
+        // Emitir el evento de conversación obtenida al usuario
+        emitEvent('conversationRetrieved', {
+            senderId,
+            receiverId: userId,
+            messages
+        });
+
+        // Enviar respuesta con los mensajes y la información de paginación
+        res.json({
+            totalMessages,
+            totalPages: Math.ceil(totalMessages / limit),
+            currentPage: 1,
+            messages
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error al obtener las conversaciones.' });
+    }
+};
+
+module.exports = { sendMessage, GetUserInformacionToListMyUsersInteraction, getConversationWithUser };

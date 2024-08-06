@@ -6,13 +6,9 @@ function initialize(server) {
   io = socketIo(server);
   io.on("connection", (socket) => {
     console.log("Un cliente se ha conectado");
-
-    // Unirse a una sala
     socket.on("joinDriverRoom", (roomId) => {
       socket.join(roomId);
     });
-
-    // Emitir ubicación a una sala
     socket.on("sendDriverLocation", ({ room, driverLocation }) => {
       io.to(room).emit("reciveDriverLocation", driverLocation);
     });
