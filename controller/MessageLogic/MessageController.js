@@ -160,7 +160,7 @@ const getConversationWithUser = async (req, res) => {
                 { sender: userId, receiver: senderId }
             ]
         })
-        .sort({ timestamp: -1 }) // Ordenar por timestamp en orden descendente
+        .sort({ timestamp: 1 }) // Ordenar por timestamp en orden ascendente
         .limit(limit)
         .populate({
             path: 'receiver',
@@ -198,6 +198,7 @@ const getConversationWithUser = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener las conversaciones.' });
     }
 };
+
 
 
 module.exports = { sendMessage, GetUserInformacionToListMyUsersInteraction, getConversationWithUser };
