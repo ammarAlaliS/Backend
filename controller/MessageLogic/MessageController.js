@@ -164,11 +164,11 @@ const getConversationWithUser = async (req, res) => {
         .limit(limit)
         .populate({
             path: 'receiver',
-            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
+            select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
         })
         .populate({
             path: 'sender',
-            select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
+            select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
         });
 
         // Contar el total de mensajes entre los dos usuarios
@@ -198,5 +198,6 @@ const getConversationWithUser = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener las conversaciones.' });
     }
 };
+
 
 module.exports = { sendMessage, GetUserInformacionToListMyUsersInteraction, getConversationWithUser };
