@@ -179,13 +179,6 @@ const getConversationWithUser = async (req, res) => {
             ]
         });
 
-        // Emitir el evento de conversación obtenida al usuario
-        emitEvent('conversationRetrieved', {
-            senderId,
-            receiverId: userId,
-            messages
-        });
-
         // Enviar respuesta con los mensajes y la información de paginación
         res.json({
             totalMessages,
