@@ -69,7 +69,7 @@ const GetUserInformacionToListMyUsersInteraction = async (req, res) => {
 
         // Parámetros de paginación
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 20;
         const skip = (page - 1) * limit;
 
         // Obtener mensajes con paginación, ordenando por timestamp en orden descendente
@@ -151,7 +151,7 @@ const getConversationWithUser = async (req, res) => {
         }
 
         // Parámetros de paginación (últimos 10 mensajes recientes)
-        const limit = 10;
+        const limit = 20;
 
         // Obtener los últimos 10 mensajes entre el usuario autenticado y el otro usuario, ordenados por timestamp en orden descendente
         let messages = await Message.find({
