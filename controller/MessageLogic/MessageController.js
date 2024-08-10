@@ -151,7 +151,7 @@ const getConversationWithUser = async (req, res) => {
         }
 
         // Parámetros de paginación (usando los valores de la query o los valores predeterminados)
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 20;
         const page = parseInt(req.query.page) || 1;
         const skip = (page - 1) * limit;
 
