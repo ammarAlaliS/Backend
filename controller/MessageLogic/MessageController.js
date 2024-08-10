@@ -69,7 +69,7 @@ const GetUserInformacionToListMyUsersInteraction = async (req, res) => {
 
         // Parámetros de paginación
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
+        const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
         // Obtener mensajes con paginación, ordenando por timestamp en orden descendente
