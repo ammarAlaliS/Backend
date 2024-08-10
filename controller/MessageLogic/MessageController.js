@@ -150,10 +150,12 @@ const getConversationWithUser = async (req, res) => {
             return res.status(401).json({ message: 'Acceso no autorizado.' });
         }
 
-        // Parámetros de paginación (últimos 10 mensajes recientes)
-        const limit = 20;
+        // Parámetros de paginación (usando los valores de la query o los valores predeterminados)
+        const limit = parseInt(req.query.limit) || 10;
+        const page = parseInt(req.query.page) || 1;
+        const skip = (page - 1) * limit;
 
-        // Obtener los últimos 10 mensajes entre el usuario autenticado y el otro usuario, ordenados por timestamp en orden descendente
+        // Obtener los mensajes paginados entre el usuario autenticado y el otro usuario, ordenados por timestamp en orden descendente
         let messages = await Message.find({
             $or: [
                 { sender: senderId, receiver: userId },
@@ -161,7 +163,8 @@ const getConversationWithUser = async (req, res) => {
             ]
         })
         .sort({ timestamp: -1 }) // Ordenar por timestamp en orden descendente
-        .limit(limit)
+        .skip(skip) // Saltar los primeros (page - 1) * limit resultados
+        .limit(limit) // Limitar el número de resultados
         .populate({
             path: 'receiver',
             select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
@@ -186,7 +189,7 @@ const getConversationWithUser = async (req, res) => {
         res.json({
             totalMessages,
             totalPages: Math.ceil(totalMessages / limit),
-            currentPage: 1,
+            currentPage: page,
             messages
         });
     } catch (error) {
@@ -194,7 +197,6 @@ const getConversationWithUser = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener las conversaciones.' });
     }
 };
-
 
 
 
