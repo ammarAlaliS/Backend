@@ -162,7 +162,7 @@ const getConversationWithUser = async (req, res) => {
                 { sender: userId, receiver: senderId }
             ]
         })
-        .sort({ timestamp: -1 }) // Ordenar por timestamp en orden descendente
+        .sort({ timestamp: 1 }) // Ordenar por timestamp en orden descendente
         .skip(skip) // Saltar los primeros (page - 1) * limit resultados
         .limit(limit) // Limitar el número de resultados
         .populate({
