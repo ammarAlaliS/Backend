@@ -150,13 +150,13 @@ const getConversationWithUser = async (req, res) => {
             return res.status(401).json({ message: 'Acceso no autorizado.' });
         }
 
-        // Parámetros de paginación (usando los valores de la query o los valores predeterminados)
+        // Parámetros de paginación
         const limit = parseInt(req.query.limit) || 20;
         const page = parseInt(req.query.page) || 1;
         const skip = (page - 1) * limit;
 
-        // Obtener los mensajes paginados entre el usuario autenticado y el otro usuario, ordenados por timestamp en orden descendente
-        let messages = await Message.find({
+        // Obtener los mensajes paginados entre el usuario autenticado y el otro usuario
+        const messages = await Message.find({
             $or: [
                 { sender: senderId, receiver: userId },
                 { sender: userId, receiver: senderId }
@@ -174,8 +174,37 @@ const getConversationWithUser = async (req, res) => {
             select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
         });
 
-        // Invertir el orden de los mensajes para que se muestren en orden cronológico ascendente
-        messages = messages.reverse();
+        // Agrupar los mensajes por fecha
+        const groupedMessages = messages.reduce((acc, message) => {
+            const messageDate = new Date(message.timestamp);
+            const today = new Date();
+            const yesterday = new Date(today.getTime() - 86400000); // 24 horas antes
+
+            // Formato de fecha numérico
+            const formattedDate = messageDate.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            // Formatear la fecha para la comparación
+            const messageDateStr = messageDate.toLocaleDateString('es-ES');
+            const todayDateStr = today.toLocaleDateString('es-ES');
+            const yesterdayDateStr = yesterday.toLocaleDateString('es-ES');
+
+            if (messageDateStr === todayDateStr) {
+                acc['Hoy'] = acc['Hoy'] || [];
+                acc['Hoy'].push(message);
+            } else if (messageDateStr === yesterdayDateStr) {
+                acc['Ayer'] = acc['Ayer'] || [];
+                acc['Ayer'].push(message);
+            } else {
+                acc[formattedDate] = acc[formattedDate] || [];
+                acc[formattedDate].push(message);
+            }
+
+            return acc;
+        }, {});
 
         // Contar el total de mensajes entre los dos usuarios
         const totalMessages = await Message.countDocuments({
@@ -185,18 +214,19 @@ const getConversationWithUser = async (req, res) => {
             ]
         });
 
-        // Enviar respuesta con los mensajes y la información de paginación
+        // Enviar respuesta con los mensajes agrupados y la información de paginación
         res.json({
             totalMessages,
             totalPages: Math.ceil(totalMessages / limit),
             currentPage: page,
-            messages
+            groupedMessages
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al obtener las conversaciones.' });
     }
 };
+
 
 
 
