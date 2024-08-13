@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Message = require('../../models/MessageModel');
 const User = require('../../models/userModel');
 const { emitEvent } = require('../../socketLogic');
+const moment = require('moment-timezone');
 
 // Controlador para enviar mensajes
 const sendMessage = async (req, res) => {
@@ -150,6 +151,9 @@ const getConversationWithUser = async (req, res) => {
             return res.status(401).json({ message: 'Acceso no autorizado.' });
         }
 
+        // Obtener la zona horaria del cliente desde la consulta
+        const timeZone = req.query.timeZone || 'UTC';
+
         // Parámetros de paginación
         const limit = parseInt(req.query.limit) || 20;
         const page = parseInt(req.query.page) || 1;
@@ -174,22 +178,18 @@ const getConversationWithUser = async (req, res) => {
             select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
         });
 
-        // Agrupar los mensajes por fecha
+        // Agrupar los mensajes por fecha en la zona horaria del cliente
         const groupedMessagesObj = messages.reduce((acc, message) => {
-            const messageDate = new Date(message.timestamp);
-            const today = new Date();
-            const yesterday = new Date(today.getTime() - 86400000); // 24 horas antes
+            const messageDate = moment(message.timestamp).tz(timeZone).startOf('day'); // Convertir al inicio del día en la zona horaria del cliente
+            const today = moment().tz(timeZone).startOf('day');
+            const yesterday = moment().tz(timeZone).subtract(1, 'day').startOf('day');
 
             // Formato de fecha numérico
-            const formattedDate = messageDate.toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
+            const formattedDate = messageDate.format('DD/MM/YYYY');
 
-            const messageDateStr = messageDate.toLocaleDateString('es-ES');
-            const todayDateStr = today.toLocaleDateString('es-ES');
-            const yesterdayDateStr = yesterday.toLocaleDateString('es-ES');
+            const messageDateStr = messageDate.format('DD/MM/YYYY');
+            const todayDateStr = today.format('DD/MM/YYYY');
+            const yesterdayDateStr = yesterday.format('DD/MM/YYYY');
 
             if (messageDateStr === todayDateStr) {
                 acc['Hoy'] = acc['Hoy'] || [];
