@@ -175,7 +175,7 @@ const getConversationWithUser = async (req, res) => {
         });
 
         // Agrupar los mensajes por fecha
-        const groupedMessages = messages.reduce((acc, message) => {
+        const groupedMessagesObj = messages.reduce((acc, message) => {
             const messageDate = new Date(message.timestamp);
             const today = new Date();
             const yesterday = new Date(today.getTime() - 86400000); // 24 horas antes
@@ -187,7 +187,6 @@ const getConversationWithUser = async (req, res) => {
                 year: 'numeric'
             });
 
-            // Formatear la fecha para la comparación
             const messageDateStr = messageDate.toLocaleDateString('es-ES');
             const todayDateStr = today.toLocaleDateString('es-ES');
             const yesterdayDateStr = yesterday.toLocaleDateString('es-ES');
@@ -206,6 +205,12 @@ const getConversationWithUser = async (req, res) => {
             return acc;
         }, {});
 
+        // Convertir el objeto agrupado en un array
+        const groupedMessagesArray = Object.keys(groupedMessagesObj).map(date => ({
+            date,
+            messages: groupedMessagesObj[date]
+        }));
+
         // Contar el total de mensajes entre los dos usuarios
         const totalMessages = await Message.countDocuments({
             $or: [
@@ -219,13 +224,14 @@ const getConversationWithUser = async (req, res) => {
             totalMessages,
             totalPages: Math.ceil(totalMessages / limit),
             currentPage: page,
-            groupedMessages
+            groupedMessages: groupedMessagesArray
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al obtener las conversaciones.' });
     }
 };
+
 
 
 
