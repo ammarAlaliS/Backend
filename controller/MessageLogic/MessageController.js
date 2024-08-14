@@ -178,39 +178,6 @@ const getConversationWithUser = async (req, res) => {
             select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
         });
 
-        // Agrupar los mensajes por fecha en la zona horaria del cliente
-        const groupedMessagesObj = messages.reduce((acc, message) => {
-            const messageDate = moment(message.timestamp).tz(timeZone).startOf('day'); // Convertir al inicio del día en la zona horaria del cliente
-            const today = moment().tz(timeZone).startOf('day');
-            const yesterday = moment().tz(timeZone).subtract(1, 'day').startOf('day');
-
-            // Formato de fecha numérico
-            const formattedDate = messageDate.format('DD/MM/YYYY');
-
-            const messageDateStr = messageDate.format('DD/MM/YYYY');
-            const todayDateStr = today.format('DD/MM/YYYY');
-            const yesterdayDateStr = yesterday.format('DD/MM/YYYY');
-
-            if (messageDateStr === todayDateStr) {
-                acc['Hoy'] = acc['Hoy'] || [];
-                acc['Hoy'].push(message);
-            } else if (messageDateStr === yesterdayDateStr) {
-                acc['Ayer'] = acc['Ayer'] || [];
-                acc['Ayer'].push(message);
-            } else {
-                acc[formattedDate] = acc[formattedDate] || [];
-                acc[formattedDate].push(message);
-            }
-
-            return acc;
-        }, {});
-
-        // Convertir el objeto agrupado en un array
-        const groupedMessagesArray = Object.keys(groupedMessagesObj).map(date => ({
-            date,
-            messages: groupedMessagesObj[date]
-        }));
-
         // Contar el total de mensajes entre los dos usuarios
         const totalMessages = await Message.countDocuments({
             $or: [
@@ -219,18 +186,20 @@ const getConversationWithUser = async (req, res) => {
             ]
         });
 
-        // Enviar respuesta con los mensajes agrupados y la información de paginación
+        // Enviar respuesta con los mensajes en orden descendente, la información de paginación, y la zona horaria
         res.json({
             totalMessages,
             totalPages: Math.ceil(totalMessages / limit),
             currentPage: page,
-            groupedMessages: groupedMessagesArray
+            messages, // Enviar el array de mensajes directamente
+            timeZone // Enviar la zona horaria del usuario
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error al obtener las conversaciones.' });
     }
 };
+
 
 
 
