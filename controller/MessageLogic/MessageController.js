@@ -4,14 +4,13 @@ const User = require('../../models/userModel');
 const { emitEvent } = require('../../socketLogic');
 const moment = require('moment-timezone');
 
-// Controlador para enviar mensajes
 const sendMessage = async (req, res) => {
     try {
         const { content } = req.body;
         const { receiverId } = req.params;
         const senderId = req.user._id.toString(); 
 
-        // Validación de entrada
+      
         if (!content || !receiverId) {
             return res.status(400).json({ message: 'El contenido y el receptor son requeridos.' });
         }
@@ -19,34 +18,29 @@ const sendMessage = async (req, res) => {
             return res.status(400).json({ message: 'El ID del receptor no es válido.' });
         }
 
-        // Crear un nuevo mensaje
+    
         const newMessage = new Message({
             sender: senderId,
             receiver: receiverId,
             content: content,
-            timestamp: new Date() // Incluye el timestamp
+            timestamp: new Date() 
         });
 
-        // Guardar el mensaje en la base de datos
         const savedMessage = await newMessage.save();
 
-        // Obtener información del receptor y del emisor
         const receiver = await User.findById(receiverId).select('global_user');
         const sender = await User.findById(senderId).select('global_user');
 
-        // Validar existencia de receptor y emisor
         if (!receiver || !sender) {
             return res.status(404).json({ message: 'Usuario receptor o emisor no encontrado.' });
         }
 
-        // Emitir el mensaje a los usuarios correspondientes
         emitEvent('newMessage', {
             message: savedMessage,
             sender: sender.global_user,
             receiver: receiver.global_user
         });
 
-        // Enviar respuesta con el mensaje guardado
         res.status(201).json(savedMessage);
     } catch (error) {
         console.error(error);
@@ -54,13 +48,11 @@ const sendMessage = async (req, res) => {
     }
 };
 
-// Controlador para obtener la información de las interacciones del usuario
 const GetUserInformacionToListMyUsersInteraction = async (req, res) => {
     try {
         const { userId } = req.params;
         const senderId = req.user._id.toString();
 
-        // Validación de entrada
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ message: 'El ID del usuario no es válido.' });
         }
@@ -68,12 +60,10 @@ const GetUserInformacionToListMyUsersInteraction = async (req, res) => {
             return res.status(401).json({ message: 'Acceso no autorizado, solo el propietario de estos mensajes puede leerlos.' });
         }
 
-        // Parámetros de paginación
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // Obtener mensajes con paginación, ordenando por timestamp en orden descendente
         const messages = await Message.find({
             $or: [
                 { sender: userId },
@@ -92,15 +82,6 @@ const GetUserInformacionToListMyUsersInteraction = async (req, res) => {
             select: 'global_user.first_name global_user.last_name global_user.email global_user.profile_img_url'
         });
 
-        // Contar el total de mensajes
-        const totalMessages = await Message.countDocuments({
-            $or: [
-                { sender: userId },
-                { receiver: userId }
-            ]
-        });
-
-        // Agrupar conversaciones por combinación de sender y receiver
         const groupedConversations = {};
         messages.forEach(message => {
             const otherUserId = message.sender._id.toString() === userId ? message.receiver._id.toString() : message.sender._id.toString();
@@ -120,13 +101,11 @@ const GetUserInformacionToListMyUsersInteraction = async (req, res) => {
             }
         });
 
-        // Convertir el objeto de conversaciones en un array
         const result = Object.values(groupedConversations);
 
-        // Enviar respuesta con las conversaciones agrupadas
         res.json({
-            totalMessages,
-            totalPages: Math.ceil(totalMessages / limit),
+            totalConversaciones: result.length,
+            totalPages: Math.ceil(result.length / limit),
             currentPage: page,
             conversations: result
         });
@@ -138,37 +117,32 @@ const GetUserInformacionToListMyUsersInteraction = async (req, res) => {
 
 const getConversationWithUser = async (req, res) => {
     try {
-        const { userId } = req.params; // ID del otro usuario
-        const senderId = req.user._id.toString(); // ID del usuario autenticado
+        const { userId } = req.params; 
+        const senderId = req.user._id.toString();
 
-        // Validación de entrada
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ message: 'El ID del usuario no es válido.' });
         }
 
-        // Verificar que el usuario autenticado tenga permiso para ver las conversaciones
         if (!req.user || !req.user._id) {
             return res.status(401).json({ message: 'Acceso no autorizado.' });
         }
 
-        // Obtener la zona horaria del cliente desde la consulta
         const timeZone = req.query.timeZone || 'UTC';
 
-        // Parámetros de paginación
         const limit = parseInt(req.query.limit) || 20;
         const page = parseInt(req.query.page) || 1;
         const skip = (page - 1) * limit;
 
-        // Obtener los mensajes paginados entre el usuario autenticado y el otro usuario
         const messages = await Message.find({
             $or: [
                 { sender: senderId, receiver: userId },
                 { sender: userId, receiver: senderId }
             ]
         })
-        .sort({ timestamp: -1 }) // Ordenar por timestamp en orden descendente
-        .skip(skip) // Saltar los primeros (page - 1) * limit resultados
-        .limit(limit) // Limitar el número de resultados
+        .sort({ timestamp: -1 })
+        .skip(skip) 
+        .limit(limit)
         .populate({
             path: 'receiver',
             select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
@@ -178,7 +152,6 @@ const getConversationWithUser = async (req, res) => {
             select: 'global_user.first_name global_user.last_name global_user.profile_img_url'
         });
 
-        // Contar el total de mensajes entre los dos usuarios
         const totalMessages = await Message.countDocuments({
             $or: [
                 { sender: senderId, receiver: userId },
@@ -186,13 +159,12 @@ const getConversationWithUser = async (req, res) => {
             ]
         });
 
-        // Enviar respuesta con los mensajes en orden descendente, la información de paginación, y la zona horaria
         res.json({
             totalMessages,
             totalPages: Math.ceil(totalMessages / limit),
             currentPage: page,
-            messages, // Enviar el array de mensajes directamente
-            timeZone // Enviar la zona horaria del usuario
+            messages,
+            timeZone 
         });
     } catch (error) {
         console.error(error);
