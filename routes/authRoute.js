@@ -11,6 +11,7 @@ const {
   handleRefreshToken,
   findDeletedAccounts,
   updateUserRole,
+  checkSession
 } = require("../controller/userController");
 const {
   authMiddleware,
@@ -413,6 +414,12 @@ router.post("/register", upload, createUser);
  */
 
 router.post("/login", loginUserCtrl);
+router.post ("/refresh-token", authMiddleware, handleRefreshToken)
+router.get('/check-session', checkSession);
+
+
+
+
 router.get("/user/:id", authMiddleware, findUser);
 
 /**

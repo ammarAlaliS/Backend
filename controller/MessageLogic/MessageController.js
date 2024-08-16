@@ -173,8 +173,4 @@ const getConversationWithUser = async (req, res) => {
 };
 
 
-
-
-
-
 module.exports = { sendMessage, GetUserInformacionToListMyUsersInteraction, getConversationWithUser };

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const validator = require('validator');
+const { boolean } = require('joi');
 
 const userSchema = new mongoose.Schema({
   global_user: {
@@ -27,10 +28,6 @@ const userSchema = new mongoose.Schema({
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters long'],
     },
-    refreshToken:{
-      type: String,
-      required: false
-    },
     profile_img_url: {
       type: String,
       validate: {
@@ -44,6 +41,14 @@ const userSchema = new mongoose.Schema({
       type: String,
       enum: ['user', 'admin', 'passenger', 'driver'],
       default: 'user',
+    },
+    refreshToken:{
+      type: String,
+      required: false
+    },
+    isActive: { 
+      type: Boolean, 
+      default: false 
     },
   },
   Blog: [{

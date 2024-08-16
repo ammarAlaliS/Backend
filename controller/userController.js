@@ -8,6 +8,7 @@ const { isUserDelete } = require("../middleawares/authMiddleWare");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
+const jwt = require('jsonwebtoken');
 
 // create a driver user.
 
@@ -118,57 +119,135 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Buscar al usuario por su email
+
     const findUser = await User.findOne({ "global_user.email": email });
 
-    // Verificar si el usuario existe
     if (!findUser) {
       return res.status(401).json({ message: "Usuario no encontrado" });
     }
 
-    // Verificar si la contraseña proporcionada coincide con la almacenada en la base de datos
     const isMatch = await findUser.isPasswordMatched(password);
     if (!isMatch) {
       return res.status(401).json({ message: "Contraseña inválida" });
     }
 
-    // Generar un nuevo refreshToken
     const refreshToken = await generateRefreshToken(findUser._id);
 
-    // Actualizar el token de actualización en la base de datos
-    await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       findUser._id,
-      { "global_user.refreshToken": refreshToken },
+      { "global_user.refreshToken": refreshToken, "global_user.isActive": true },
       { new: true }
     );
 
-    // Configurar la cookie de refreshToken en la respuesta
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      maxAge: 72 * 60 * 60 * 1000, // 72 horas de validez
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 6 * 24 * 60 * 60 * 1000,
+      sameSite: "strict",
     });
+    
 
-    // Enviar la respuesta al cliente con el token de acceso y la información del usuario
+    const token = await generateToken(findUser._id);
+
     res.json({
-      id: findUser._id || null,
-      first_name: findUser.global_user.first_name,
-      last_name: findUser.global_user.last_name,
-      profile_img_url: findUser.global_user.profile_img_url || null,
-      token: generateToken(findUser._id),
+      id: updatedUser._id,
+      first_name: updatedUser.global_user.first_name,
+      last_name: updatedUser.global_user.last_name,
+      profile_img_url: updatedUser.global_user.profile_img_url || null,
+      token,
+      isActive: updatedUser.global_user.isActive 
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error en loginUserCtrl:", error);
     res.status(500).json({ message: "Error Interno del Servidor" });
   }
 });
 
+
+
 // ============================================================================================================================================================
 
-// handle refresh token
-const handleRefreshToken = asyncHandler(async (req, res) => {
-  const cookie = req.cookies;
-  if (!cookie?.refreshToken) throw new Error("Not Refresh Token in Cookies");
+const checkSession = asyncHandler(async (req, res) => {
+  // Extraer el token del encabezado Authorization
+  const authHeader = req.headers.authorization;
+
+  // Verificar que el encabezado Authorization esté presente y tenga el formato adecuado
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    // Verificar el token de acceso
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Buscar al usuario en la base de datos
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verificar el estado de la sesión
+    if (!user.global_user.isActive) {
+      return res.status(401).json({ message: "Session is not active" });
+    }
+
+    // Devolver la información del usuario
+    res.json({
+      id: user._id,
+      first_name: user.global_user.first_name,
+      last_name: user.global_user.last_name,
+      profile_img_url: user.global_user.profile_img_url || null,
+      isActive: user.global_user.isActive
+    });
+  } catch (error) {
+    console.error("Error en checkSession:", error);
+    res.status(401).json({ message: "Invalid or expired token" });
+  }
 });
+
+
+
+// =========================================================================================================================================
+
+
+const handleRefreshToken = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.cookies;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "No refresh token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    
+    const user = await User.findById(decoded.id);
+    if (!user || user.global_user.refreshToken !== refreshToken) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+
+    const newAccessToken = generateToken(user._id);
+    const newRefreshToken = generateRefreshToken(user._id);
+
+    await User.findByIdAndUpdate(user._id, { "global_user.refreshToken": newRefreshToken });
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 6 * 24 * 60 * 60 * 1000,
+      sameSite: "strict",
+    });
+
+    res.json({
+      token: newAccessToken,
+      refreshToken: newRefreshToken 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(403).json({ message: "Invalid refresh token" });
+  }
+});
+
 
 // ============================================================================================================================================================
 
@@ -400,4 +479,5 @@ module.exports = {
   getAllDeleteAccount,
   createDriverUser,
   updateUserRole,
+  checkSession
 };
