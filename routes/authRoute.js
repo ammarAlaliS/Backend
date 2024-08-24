@@ -11,13 +11,12 @@ const {
   handleRefreshToken,
   findDeletedAccounts,
   updateUserRole,
-  checkSession
+  checkSession,
 } = require("../controller/userController");
 const {
   authMiddleware,
   isAdmin,
-  auth
-  
+  auth,
 } = require("../middleawares/authMiddleWare");
 const {
   createTrip,
@@ -31,6 +30,7 @@ const {
   handleFormData,
   getAllBlogs,
   deleteBlogById,
+  handleFormDataSeccionImages,
 } = require("../controller/BlogController");
 const {
   getProducts,
@@ -69,8 +69,7 @@ const {
 const {
   sendMessage,
   getConversationWithUser,
-  GetUserInformacionToListMyUsersInteraction
-
+  GetUserInformacionToListMyUsersInteraction,
 } = require("../controller/MessageLogic/MessageController");
 
 const router = express.Router();
@@ -90,9 +89,12 @@ router.get("/drivers-nearby", getNearbyQuickCars);
 router.get("/drivers-nearby-trip-filters", getNearbyLocationQuickCars);
 
 router.post("/send/:receiverId", authMiddleware, sendMessage);
-router.get('/user/information/conversations/:userId', authMiddleware, GetUserInformacionToListMyUsersInteraction);
-router.get('/conversations/:userId', authMiddleware, getConversationWithUser);
-
+router.get(
+  "/user/information/conversations/:userId",
+  authMiddleware,
+  GetUserInformacionToListMyUsersInteraction
+);
+router.get("/conversations/:userId", authMiddleware, getConversationWithUser);
 
 /**
  * @swagger
@@ -136,6 +138,7 @@ router.post(
   authMiddleware,
   isAdmin,
   handleFormData,
+  handleFormDataSeccionImages,
   createBlog
 );
 
@@ -414,11 +417,8 @@ router.post("/register", upload, createUser);
  */
 
 router.post("/login", loginUserCtrl);
-router.post ("/refresh-token", authMiddleware, handleRefreshToken)
-router.get('/check-session', checkSession);
-
-
-
+router.post("/refresh-token", authMiddleware, handleRefreshToken);
+router.get("/check-session", checkSession);
 
 router.get("/user/:id", authMiddleware, findUser);
 

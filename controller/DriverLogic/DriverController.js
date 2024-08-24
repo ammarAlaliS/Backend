@@ -39,12 +39,6 @@ const createQuickCar = asyncHandler(async (req, res) => {
       .json({ message: "La imagen del vehiculo es requerida" });
   }
 
-  if (!req.files["drivingLicenseImage"]) {
-    return res
-      .status(400)
-      .json({ message: "La imagen de la licensia es requerida" });
-  }
-
   const session = await mongoose.startSession();
   session.startTransaction();
 
