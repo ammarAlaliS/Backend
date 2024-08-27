@@ -3,7 +3,6 @@ const multer = require('multer');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
 
-// Configuración de Google Cloud Storage
 const storage = new Storage({
   projectId: process.env.GCLOUD_PROJECT_ID,
   credentials: {
@@ -14,11 +13,12 @@ const storage = new Storage({
 
 const bucketName = 'quickcar-storage';
 
-// Configuración de multer
 const multerStorage = multer.memoryStorage();
-const upload = multer({ storage: multerStorage }).single('profile_img_url');
+const upload = multer({ storage: multerStorage }).fields([
+  { name: 'profile_img_url', maxCount: 1 },
+  { name: 'presentation_img_url', maxCount: 1 }
+]);
 
-// Función para subir la imagen a Google Cloud Storage
 const uploadImageToStorage = (file) => {
   return new Promise((resolve, reject) => {
     const blob = storage.bucket(bucketName).file(Date.now() + "_" + file.originalname);
@@ -37,10 +37,10 @@ const uploadImageToStorage = (file) => {
   });
 };
 
-// Función para crear un usuario
+
 const createUser = asyncHandler(async (req, res) => {
   try {
-    const { email, first_name, last_name, password, role } = req.body;
+    const { email, first_name, last_name, password, role, user_description } = req.body;
 
     if (!email || !first_name || !last_name || !password) {
       console.log("Missing required fields:", { email, first_name, last_name, password });
@@ -55,23 +55,27 @@ const createUser = asyncHandler(async (req, res) => {
     }
 
     let profileImageUrl;
-    if (req.file) {
-      profileImageUrl = await uploadImageToStorage(req.file);
+    if (req.files['profile_img_url']) {
+      profileImageUrl = await uploadImageToStorage(req.files['profile_img_url'][0]);
+    }
+
+    let presentationImageUrl;
+    if (req.files['presentation_img_url']) {
+      presentationImageUrl = await uploadImageToStorage(req.files['presentation_img_url'][0]);
     }
 
     const userData = {
       global_user: {
         first_name,
         last_name,
+        user_description,
         email,
         password,
-        role
+        role,
+        profile_img_url: profileImageUrl || '',  
+        presentation_img_url: presentationImageUrl || ''
       },
     };
-
-    if (profileImageUrl) {
-      userData.global_user.profile_img_url = profileImageUrl;
-    }
 
     console.log("Creating user with data:", userData);
     const newUser = await User.create(userData);
