@@ -90,7 +90,7 @@ const processImages = async (files) => {
 
 // Controlador para crear un nuevo blog
 const createBlog = async (req, res) => {
-  const { title, tags, blog_description, sections, section_images_indexs } =
+  const { title, tags, blog_description, sections } =
     req.body;
 
   // Validar campos requeridos
@@ -103,25 +103,19 @@ const createBlog = async (req, res) => {
   try {
     // Procesar imágenes del blog principal
     const blogImageUrls = await processImages(req.files["blog_image_url"]);
-    const seccionImageUrls = await processImages(req.files["section_images"]);
+    
 
     // Procesar las secciones del blog
-    const processedSections = sections.map((section, index) => {
-      let images = [];
-      const filterIndex = section_images_indexs
-        .split(",")
-        .map((subIndex, subSubIndex) => {
-          if (subIndex == index) {
-            images.push(seccionImageUrls[subSubIndex]);
-          }
-        });
+    const processedSections = sections.map(async (section, index) => {
+
+      let seccionImageUrls = await processImages(section.files["section_images"]);;
 
       return {
         title: section.title || "",
         content: section.content || [],
         list: section.list || [],
         links: section.links || [],
-        section_images: images || [],
+        section_images: seccionImageUrls || [],
       };
     });
 

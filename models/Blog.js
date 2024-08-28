@@ -73,21 +73,19 @@ const blogSchema = new mongoose.Schema(
             message: "Los enlaces deben tener título y URL válida",
           },
         },
-        section_images: {
-          type: [
-            {
-              url: {
-                type: String,
-                required: true,
-              },
-              alt: {
-                type: String,
-                required: false,
-                trim: true,
-              },
+        section_images: [
+          {
+            url: {
+              type: String,
+              required: true,
             },
-          ],
-        },
+            alt: {
+              type: String,
+              required: false,
+              trim: true,
+            },
+          },
+        ],
       },
     ],
     user: {

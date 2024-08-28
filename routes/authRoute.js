@@ -135,10 +135,10 @@ router.get("/all-users", getUsers);
  */
 router.post(
   "/create/blog",
-  authMiddleware,
-  isAdmin,
-  handleFormData,
-  handleFormDataSeccionImages,
+  // authMiddleware,
+  // isAdmin,
+  // handleFormData,
+  // handleFormDataSeccionImages,
   createBlog
 );
 
