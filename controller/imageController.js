@@ -3,22 +3,25 @@ const multer = require('multer');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
 
+// Configuración de Google Cloud Storage
 const storage = new Storage({
   projectId: process.env.GCLOUD_PROJECT_ID,
   credentials: {
-    private_key: process.env.GCLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'), 
+    private_key: process.env.GCLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
     client_email: process.env.GCLOUD_CLIENT_EMAIL,
   },
 });
 
 const bucketName = 'quickcar-storage';
 
+// Configuración de multer para almacenamiento en memoria
 const multerStorage = multer.memoryStorage();
 const upload = multer({ storage: multerStorage }).fields([
   { name: 'profile_img_url', maxCount: 1 },
   { name: 'presentation_img_url', maxCount: 1 }
 ]);
 
+// Función para subir imágenes a Google Cloud Storage
 const uploadImageToStorage = (file) => {
   return new Promise((resolve, reject) => {
     const blob = storage.bucket(bucketName).file(Date.now() + "_" + file.originalname);
@@ -37,7 +40,7 @@ const uploadImageToStorage = (file) => {
   });
 };
 
-
+// Función para crear un nuevo usuario
 const createUser = asyncHandler(async (req, res) => {
   try {
     const { email, first_name, last_name, password, role, user_description } = req.body;
@@ -54,14 +57,24 @@ const createUser = asyncHandler(async (req, res) => {
       return res.status(409).json({ message: "User Already Exists" });
     }
 
-    let profileImageUrl;
+    let profileImageUrl = '';
     if (req.files['profile_img_url']) {
-      profileImageUrl = await uploadImageToStorage(req.files['profile_img_url'][0]);
+      try {
+        profileImageUrl = await uploadImageToStorage(req.files['profile_img_url'][0]);
+      } catch (err) {
+        console.error("Error uploading profile image:", err);
+        return res.status(500).json({ message: "Error uploading profile image" });
+      }
     }
 
-    let presentationImageUrl;
+    let presentationImageUrl = '';
     if (req.files['presentation_img_url']) {
-      presentationImageUrl = await uploadImageToStorage(req.files['presentation_img_url'][0]);
+      try {
+        presentationImageUrl = await uploadImageToStorage(req.files['presentation_img_url'][0]);
+      } catch (err) {
+        console.error("Error uploading presentation image:", err);
+        return res.status(500).json({ message: "Error uploading presentation image" });
+      }
     }
 
     const userData = {
@@ -72,8 +85,8 @@ const createUser = asyncHandler(async (req, res) => {
         email,
         password,
         role,
-        profile_img_url: profileImageUrl || '',  
-        presentation_img_url: presentationImageUrl || ''
+        profile_img_url: profileImageUrl,
+        presentation_img_url: presentationImageUrl
       },
     };
 

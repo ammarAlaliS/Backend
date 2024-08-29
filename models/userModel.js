@@ -30,23 +30,29 @@ const userSchema = new mongoose.Schema({
     },
     profile_img_url: {
       type: String,
+      default: "",
       validate: {
         validator: function (v) {
-          return validator.isURL(v);
+          // Permitir cadenas vacías además de URLs válidas
+          return v === "" || validator.isURL(v);
         },
         message: "Invalid URL for profile image",
       },
+      required: false,
     },
     presentation_img_url: {
       type: String,
+      default: "",
       validate: {
         validator: function (v) {
-          return validator.isURL(v);
+          // Permitir cadenas vacías además de URLs válidas
+          return v === "" || validator.isURL(v);
         },
         message: "Invalid URL for presentation image",
       },
       required: false,
     },
+
     user_description: {
       type: String,
       required: false,
@@ -61,6 +67,13 @@ const userSchema = new mongoose.Schema({
       required: false,
     },
     isActive: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: {
+      type: String,
+    },
+    isVerified: {
       type: Boolean,
       default: false,
     },

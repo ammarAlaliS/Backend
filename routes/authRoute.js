@@ -73,7 +73,13 @@ const {
 
 } = require("../controller/MessageLogic/MessageController");
 
+const { sendVerificationCode, verifyCode } = require('../controller/AuthVerifyEmail/VerifyControllers'); 
+
+
 const router = express.Router();
+
+router.post('/send-code', sendVerificationCode);
+router.post('/verify-code', verifyCode);
 
 router.post(
   "/driver/register",
