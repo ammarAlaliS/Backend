@@ -33,7 +33,6 @@ const userSchema = new mongoose.Schema({
       default: "",
       validate: {
         validator: function (v) {
-          // Permitir cadenas vacías además de URLs válidas
           return v === "" || validator.isURL(v);
         },
         message: "Invalid URL for profile image",
@@ -45,7 +44,6 @@ const userSchema = new mongoose.Schema({
       default: "",
       validate: {
         validator: function (v) {
-          // Permitir cadenas vacías además de URLs válidas
           return v === "" || validator.isURL(v);
         },
         message: "Invalid URL for presentation image",
@@ -108,5 +106,4 @@ userSchema.methods.isPasswordMatched = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.global_user.password);
 };
 
-// Verifica si el modelo ya está registrado antes de definirlo
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);
