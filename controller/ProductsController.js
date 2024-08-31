@@ -158,22 +158,24 @@ const updateProduct = asyncHandler(async (req, res) => {
 
     const blogImageUrls = await processImages(req.files["product_image_url"]);
 
+    let secondaryImages=image;
+
     if (image != null && image != undefined && image.length > 0) {
       blogImageUrls.map((item) => {
-        image.push(item.url);
+        secondaryImages.push(item.url);
       });
     } else {
-      image = blogImageUrls.map((item) => {
+      secondaryImages = blogImageUrls.map((item) => {
         return item.url;
       });
     }
 
     for (let i = 0; i < product.image.length; i++) {
       if (
-        image == null ||
-        image == undefined ||
-        image.length == 0 ||
-        image.indexOf(product.image[i]) < 0
+        secondaryImages == null ||
+        secondaryImages == undefined ||
+        secondaryImages.length == 0 ||
+        secondaryImages.indexOf(product.image[i]) < 0
       ) {
         await deleteImageFromStorage(product.image[i]);
       }
@@ -186,7 +188,7 @@ const updateProduct = asyncHandler(async (req, res) => {
       product.productCategory = productCategory || product.productCategory;
       product.productStatus = productStatus || product.productStatus;
       product.productLocation = productLocation || product.productLocation;
-      product.image = image || product.image;
+      product.image = secondaryImages || product.image;
       product.stock = stock || product.stock;
       product.salesStatus = salesStatus || product.salesStatus;
       product.productRegistrationStatus =
