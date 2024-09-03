@@ -33,7 +33,7 @@ const uploadImageToStorage = async (file, altText) => {
 
     blobStream.on("finish", () => {
       const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
-      resolve(publicUrl); // Solo devuelve la URL
+      resolve(publicUrl); 
       console.log(`Imagen subida: ${publicUrl}`);
     });
 
@@ -61,19 +61,23 @@ const processImages = async (files) => {
   if (files && files.length > 0) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const imageUrl = await uploadImageToStorage(file, file.originalname);
-      console.log(`URL de imagen subida: ${imageUrl}`);
-      imageUrls.push(imageUrl); // Solo añade la URL
-    }
+      try {
+        const imageUrl = await uploadImageToStorage(file, file.originalname);
+        console.log(`URL de imagen subida: ${imageUrl}`);
+        imageUrls.push(imageUrl);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+      }
+    }1
   }
   return imageUrls;
 };
 
-// Controlador para crear un nuevo blog
+
 const createBlog = async (req, res) => {
   const { title, tags, blog_description, sections, blog_category } = req.body;
 
-  // Validación básica de los campos requeridos
+ 
   if (!title || !blog_description || !sections || sections.length === 0 || !blog_category) {
     return res.status(400).json({
       message: "Title, blog description, at least one section, and category are required",
@@ -81,15 +85,15 @@ const createBlog = async (req, res) => {
   }
 
   try {
-    // Procesar imágenes del blog principal
     const blogImageFiles = req.files["blog_image_url"] || [];
     const blogImageUrls = await processImages(blogImageFiles);
 
-    // Procesar imágenes de las secciones
     const sectionImageFiles = req.files["section_imgs"] || [];
     const sectionImageUrls = await processImages(sectionImageFiles);
 
-    // Asignar URLs de imágenes a cada sección
+    console.log("Section Image URLs:", sectionImageUrls);
+
+
     const processedSections = sections.map((section, index) => ({
       title: section.title || "",
       content: section.content.map(contentItem => ({
@@ -97,13 +101,15 @@ const createBlog = async (req, res) => {
         links: contentItem.links || []
       })),
       list: section.list || [],
-      section_imgs: sectionImageUrls[index] ? [{ url: sectionImageUrls[index], alt: "" }] : [], // Ajustar aquí
+      section_imgs: sectionImageUrls.slice(index * 10, (index + 1) * 10).map(url => ({
+        url,
+        alt: ""
+      })),
     }));
 
-    // Procesar las etiquetas
+    console.log("Processed Sections:", processedSections);
     const tagsArray = tags ? tags.split(",").map((tag) => tag.trim()) : [];
 
-    // Crear una nueva entrada de blog
     const newBlog = new Blog({
       blog_image_url: blogImageUrls.map(url => ({ url })), 
       title,
@@ -114,17 +120,13 @@ const createBlog = async (req, res) => {
       blog_category  
     });
 
-    // Guardar el blog
     await newBlog.save();
 
-    // Actualizar el usuario con el nuevo blog
     req.user.Blog.push(newBlog._id);
     await req.user.save();
 
-    // Responder con éxito
     res.status(201).json(newBlog);
   } catch (error) {
-    // Manejo de errores de validación
     if (error.name === "ValidationError") {
       const validationErrors = {};
       Object.keys(error.errors).forEach((key) => {
@@ -133,7 +135,6 @@ const createBlog = async (req, res) => {
       return res.status(400).json({ message: "Validation error", errors: validationErrors });
     }
 
-    // Manejo de otros errores
     console.error("Error creating blog:", error);
     res.status(500).json({ message: "Internal server error", error });
   }
@@ -145,17 +146,33 @@ const createBlog = async (req, res) => {
 // Controlador para obtener todos los blogs
 const getAllBlogs = asyncHandler(async (req, res) => {
   try {
-    // Obtener todos los blogs de la base de datos, incluyendo los likes poblados
-    const blogs = await Blog.find().populate("likes");
+    const page = parseInt(req.query.page) || 1; 
+    const limit = parseInt(req.query.limit) || 10;
 
-    // Enviar la respuesta con los blogs encontrados
-    res.status(200).json(blogs);
+    const skip = (page - 1) * limit;
+
+    const totalBlogs = await Blog.countDocuments();
+
+
+    const blogs = await Blog.find()
+      .skip(skip)
+      .limit(limit);
+
+    
+    const totalPages = Math.ceil(totalBlogs / limit);
+
+    res.status(200).json({
+      blogs,
+      currentPage: page,
+      totalPages,
+      totalBlogs
+    });
   } catch (error) {
-    // Si ocurre un error, enviar una respuesta de error al cliente
     console.error("Error fetching blogs:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 // ==============================================================================================================================================
 
