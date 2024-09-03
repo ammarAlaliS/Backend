@@ -1,93 +1,111 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-// Definición del esquema del blog
-const blogSchema = new mongoose.Schema({
-    blog_image_url: [{
-        url: {
+const blogSchema = new mongoose.Schema(
+    {
+      blog_image_url: [
+        {
+          url: {
             type: String,
-            required: true,
-        },
-        alt: {
+            required: [true, "La URL de la imagen del blog es requerida"],
+          },
+          alt: {
             type: String,
-            required: false, 
+            required: false,
             trim: true,
+          },
         },
-    }],
-    title: {
+      ],
+      title: {
         type: String,
-        required: [true, 'El título del blog es requerido'],
-        minlength: [5, 'El título debe tener al menos 5 caracteres'],
-        maxlength: [100, 'El título no puede tener más de 100 caracteres']
-    },
-    tags: {
+        required: [true, "El título del blog es requerido"],
+        minlength: [5, "El título debe tener al menos 5 caracteres"],
+        maxlength: [100, "El título no puede tener más de 100 caracteres"],
+      },
+      tags: {
         type: [String],
-    },
-    blog_description: {
+      },
+      blog_category: {
         type: String,
-        required: [true, 'La descripción del blog es requerida'],
-        minlength: [10, 'La descripción debe tener al menos 10 caracteres']
-    },
-    sections: [{
-        title: {
+        enum: ["Todos", "Coches", "Motocicletas", "Variados", "Noticias"],
+        default: "Todos",
+      },
+      blog_description: {
+        type: String,
+        required: [true, "La descripción del blog es requerida"],
+        minlength: [10, "La descripción debe tener al menos 10 caracteres"],
+      },
+      sections: [
+        {
+          section_imgs: [
+            {
+              url: {
+                type: String,
+                required: [true, "La URL de la imagen de la sección es requerida"],
+              },
+              alt: {
+                type: String,
+                required: false,
+                trim: true,
+              },
+            },
+          ],
+          title: {
             type: String,
-        },
-        content: {
-            type: [String],
-            required: [true, 'El contenido de la sección es requerido'],
-            minlength: [4, 'El contenido debe tener al menos 4 caracteres']
-        },
-        list: {
-            type: [String],
-        },
-        links: {
-            type: [{
-                title: {
+          },
+          content: [
+            {
+              text: {
+                type: String,
+                required: [true, "El texto del contenido es requerido"],
+              },
+              links: [
+                {
+                  title: {
                     type: String,
-                    required: false,
                     trim: true,
-                },
-                url: {
+                  },
+                  url: {
                     type: String,
-                    required: false,
-                    validate: {
-                        validator: function(v) {
-                            return v === '' || /^(ftp|http|https):\/\/[^ "]+$/.test(v);
-                        },
-                        message: props => `${props.value} no es una URL válida para el enlace`
-                    }
-                }
-            }],
-            validate: {
-                validator: function(arr) {
-                    return arr.every(link => (!link.title && !link.url) || (link.title && link.url));
+                  },
                 },
-                message: 'Los enlaces deben tener título y URL válida'
-            }
+              ],
+            },
+          ],
+          list: {
+            type: [String],
+          },
         },
-        
-    }],
-    user: {
+      ],
+      user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, 'El usuario del blog es requerido'],
+        ref: "User",
+        required: [true, "El usuario del blog es requerido"],
+      },
+      comments: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Comment",
+        },
+      ],
+      likes: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Like",
+        },
+      ],
     },
-    comments: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Comment'
-    }],
-    likes: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Like'
-    }]
-}, {
-    timestamps: true,
-});
-
-blogSchema.index({
-    title: 'text',
-    blog_description: 'text',
-    'sections.title': 'text',
-    'sections.content': 'text'
-});
-
-module.exports = mongoose.model('Blog', blogSchema);
+    {
+      timestamps: true,
+    }
+  );
+  
+  // Índices para búsqueda de texto
+  blogSchema.index({
+    title: "text",
+    blog_description: "text",
+    "sections.title": "text",
+    "sections.content.text": "text",
+  });
+  
+  module.exports = mongoose.model("Blog", blogSchema);
+  

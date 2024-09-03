@@ -58,6 +58,11 @@ const tripMadeSchema = new mongoose.Schema(
         max: [180, "Longitude must be between -180 and 180"],
       },
     },
+    tripDate: {
+      type: Date,
+      default: Date.now,
+      required: true,
+    },
     driverUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "QuickCar",

@@ -206,10 +206,7 @@ const checkSession = asyncHandler(async (req, res) => {
   }
 });
 
-
-
 // =========================================================================================================================================
-
 
 const handleRefreshToken = asyncHandler(async (req, res) => {
   const { refreshToken } = req.cookies;
@@ -246,7 +243,6 @@ const handleRefreshToken = asyncHandler(async (req, res) => {
     res.status(403).json({ message: "Invalid refresh token" });
   }
 });
-
 
 // ============================================================================================================================================================
 

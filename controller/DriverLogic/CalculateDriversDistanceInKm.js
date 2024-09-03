@@ -1,4 +1,5 @@
 const QuickCar = require("../../models/quickCarModel");
+const tripModel = require("../../models/TripModel");
 const asyncHandler = require("express-async-handler");
 
 function calculateDistance(lat1, lon1, loc2) {
@@ -181,6 +182,7 @@ const getNearbyLocationQuickCars = asyncHandler(async (req, res) => {
     starTimeHour,
     starTimeMinutes,
     numberOfSeatRequested,
+    tripDate
   } = req.query;
 
   const maxDistance = 10;
@@ -285,6 +287,40 @@ const getNearbyLocationQuickCars = asyncHandler(async (req, res) => {
     }
   });
 
+  const quickCarIds=nearbyQuickCars.map(car => car.id);
+
+  const trips = await tripModel.find({
+    driverUser: { $in: quickCarIds },
+    tripDate:tripDate,
+    $or:[
+        {status: "Created"},
+        {status: "ongoing"},
+    ]
+  });
+
+  let nearbyQuickCarsFilters=[];
+
+  nearbyQuickCars.forEach((quickCar) => {
+
+    let tripsFilters=trips.map((trip)=> trip.driverUser==quickCar.id);
+    if(tripsFilters.length>0){
+
+      let seatAvaible=quickCar.availableSeats;
+
+      tripsFilters.forEach(element => {
+        seatAvaible=seatAvaible-element.numberOfSeatsRequested;
+      });
+      
+      if(seatAvaible>=numberOfSeatRequested){
+        nearbyQuickCarsFilters.push(quickCar);
+      }
+
+    }else{
+      nearbyQuickCarsFilters.push(quickCar);
+    }
+  });
+
+
   if (!driversFound) {
     return res.status(404).json({
       message:
@@ -294,7 +330,7 @@ const getNearbyLocationQuickCars = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     message: "Lista de conductores en el rango de 10 kilómetros.",
-    conductores: nearbyQuickCars,
+    conductores: nearbyQuickCarsFilters,
   });
 });
 

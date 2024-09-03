@@ -15,13 +15,11 @@ const storage = new Storage({
   },
 });
 
-const bucketName = "quickcar-storage"; // Nombre de tu bucket en Google Cloud Storage
+const bucketName = "quickcar-storage";
 
-// Configurar el almacenamiento en memoria para Multer
 const memoryStorage = multer.memoryStorage();
 const upload = multer({ storage: memoryStorage });
 
-// Función para subir una imagen a Google Cloud Storage
 const uploadImageToStorage = async (file, altText) => {
   const blob = storage
     .bucket(bucketName)
@@ -35,7 +33,7 @@ const uploadImageToStorage = async (file, altText) => {
 
     blobStream.on("finish", () => {
       const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
-      resolve({ url: publicUrl, alt: altText });
+      resolve(publicUrl); // Solo devuelve la URL
       console.log(`Imagen subida: ${publicUrl}`);
     });
 
@@ -43,17 +41,15 @@ const uploadImageToStorage = async (file, altText) => {
   });
 };
 
-// Middleware para manejar las imágenes y los datos del formulario
 const handleFormData = (req, res, next) => {
-  upload.fields([{ name: "blog_image_url", maxCount: 5 }])(req, res, (err) => {
+  upload.fields([
+    { name: "blog_image_url", maxCount: 5 },
+    { name: "section_imgs", maxCount: 10 }
+  ])(req, res, (err) => {
     if (err instanceof multer.MulterError) {
-      return res
-        .status(400)
-        .json({ message: "Error uploading images", error: err });
+      return res.status(400).json({ message: "Error uploading images", error: err });
     } else if (err) {
-      return res
-        .status(500)
-        .json({ message: "Internal server error", error: err });
+      return res.status(500).json({ message: "Internal server error", error: err });
     }
     next();
   });
@@ -67,7 +63,7 @@ const processImages = async (files) => {
       const file = files[i];
       const imageUrl = await uploadImageToStorage(file, file.originalname);
       console.log(`URL de imagen subida: ${imageUrl}`);
-      imageUrls.push(imageUrl);
+      imageUrls.push(imageUrl); // Solo añade la URL
     }
   }
   return imageUrls;
@@ -75,65 +71,74 @@ const processImages = async (files) => {
 
 // Controlador para crear un nuevo blog
 const createBlog = async (req, res) => {
-  const { title, tags, blog_description, sections } = req.body;
+  const { title, tags, blog_description, sections, blog_category } = req.body;
 
-  // Validar campos requeridos
-  if (!title || !blog_description || !sections || sections.length === 0) {
-    return res
-      .status(400)
-      .json({
-        message:
-          "Title, blog description, and at least one section are required",
-      });
+  // Validación básica de los campos requeridos
+  if (!title || !blog_description || !sections || sections.length === 0 || !blog_category) {
+    return res.status(400).json({
+      message: "Title, blog description, at least one section, and category are required",
+    });
   }
 
   try {
     // Procesar imágenes del blog principal
-    const blogImageUrls = await processImages(req.files["blog_image_url"]);
+    const blogImageFiles = req.files["blog_image_url"] || [];
+    const blogImageUrls = await processImages(blogImageFiles);
 
-    // Procesar las secciones del blog
-    const processedSections = sections.map((section) => ({
+    // Procesar imágenes de las secciones
+    const sectionImageFiles = req.files["section_imgs"] || [];
+    const sectionImageUrls = await processImages(sectionImageFiles);
+
+    // Asignar URLs de imágenes a cada sección
+    const processedSections = sections.map((section, index) => ({
       title: section.title || "",
-      content: section.content || [],
+      content: section.content.map(contentItem => ({
+        text: contentItem.text || "",
+        links: contentItem.links || []
+      })),
       list: section.list || [],
-      links: section.links || [],
+      section_imgs: sectionImageUrls[index] ? [{ url: sectionImageUrls[index], alt: "" }] : [], // Ajustar aquí
     }));
 
-    // Convertir los tags de cadena separada por comas a array si es necesario
+    // Procesar las etiquetas
     const tagsArray = tags ? tags.split(",").map((tag) => tag.trim()) : [];
 
-    // Crear el nuevo blog con secciones y URLs de imagen
+    // Crear una nueva entrada de blog
     const newBlog = new Blog({
-      blog_image_url: blogImageUrls,
+      blog_image_url: blogImageUrls.map(url => ({ url })), 
       title,
       blog_description,
       sections: processedSections,
       user: req.user._id,
       tags: tagsArray,
+      blog_category  
     });
 
-    // Guardar el blog en la base de datos
+    // Guardar el blog
     await newBlog.save();
 
-    // Asociar el blog con el usuario
+    // Actualizar el usuario con el nuevo blog
     req.user.Blog.push(newBlog._id);
     await req.user.save();
 
+    // Responder con éxito
     res.status(201).json(newBlog);
   } catch (error) {
+    // Manejo de errores de validación
     if (error.name === "ValidationError") {
       const validationErrors = {};
       Object.keys(error.errors).forEach((key) => {
         validationErrors[key] = error.errors[key].message;
       });
-      return res
-        .status(400)
-        .json({ message: "Validation error", errors: validationErrors });
+      return res.status(400).json({ message: "Validation error", errors: validationErrors });
     }
+
+    // Manejo de otros errores
     console.error("Error creating blog:", error);
     res.status(500).json({ message: "Internal server error", error });
   }
 };
+
 
 // ============================================================================================================================================
 
