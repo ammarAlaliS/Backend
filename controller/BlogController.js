@@ -146,19 +146,25 @@ const createBlog = async (req, res) => {
 // Controlador para obtener todos los blogs
 const getAllBlogs = asyncHandler(async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; 
-    const limit = parseInt(req.query.limit) || 10;
+    let page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+
+    // Asegurarse de que el valor de page y limit sea al menos 1
+    page = Math.max(page, 1);
+    limit = Math.max(limit, 1);
 
     const skip = (page - 1) * limit;
 
     const totalBlogs = await Blog.countDocuments();
 
-
     const blogs = await Blog.find()
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .populate({
+        path: 'user',  
+        select: 'global_user.first_name global_user.last_name',
+      });
 
-    
     const totalPages = Math.ceil(totalBlogs / limit);
 
     res.status(200).json({
@@ -168,10 +174,11 @@ const getAllBlogs = asyncHandler(async (req, res) => {
       totalBlogs
     });
   } catch (error) {
-    console.error("Error fetching blogs:", error);
+    console.error("Error fetching blogs:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 
 // ==============================================================================================================================================
